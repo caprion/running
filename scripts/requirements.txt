@@ -1,0 +1,21 @@
+# Core Dependencies for Garmin Sync
+# These are required for basic sync functionality
+
+# Garmin Connect API client (includes garth for session management)
+garminconnect==0.2.19
+
+# Environment variable management
+python-dotenv==1.0.0
+
+# Data handling
+requests==2.31.0
+
+# Date handling
+python-dateutil==2.8.2
+
+# FIT file parsing (for workout and HRV analysis)
+fitparse==1.2.0
+
+# Optional: Dashboard visualization
+# For Streamlit dashboard, install: pip install -r requirements-dashboard.txt
+# (Dashboard is optional - sync works without it)
