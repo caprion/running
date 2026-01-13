@@ -1,0 +1,15 @@
+# Dashboard Visualization Dependencies
+# Install these ONLY if you want to use the Streamlit dashboard
+# Basic sync works without these packages
+
+# Web framework
+streamlit==1.29.0
+
+# Data analysis
+pandas==2.1.4
+
+# Interactive visualizations
+plotly==5.18.0
+
+# Installation:
+# pip install -r requirements-dashboard.txt

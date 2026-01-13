@@ -1,0 +1,61 @@
+# Environment variables (contains Garmin credentials)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+
+# Personal data - DO NOT COMMIT
+tracking/
+!tracking/.gitkeep
+seasons/
+!seasons/.gitkeep
+media/
+!media/.gitkeep
+analysis/
+!analysis/.gitkeep
+
+# Personal training dashboard
+TRAINING-DASHBOARD.md
+
+# Garmin sessions
+scripts/.garth/
+scripts/.garmin_session.json
+scripts/*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Excel temp files and personal training plans
+~$*.xlsx
+*.xlsx
+
+# Claude temporary files
+tmpclaude-*.cwd
+*.cwd
+
+# Other temp files
+nul
+sync_output.txt
+
+# FIT files and data
+*.fit
+
+# Claude session data
+.claude-memory/
+.claude/
