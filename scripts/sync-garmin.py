@@ -64,40 +64,40 @@ class GarminSync:
 
         # Try to load existing session first
         if self._load_session():
-            print("✅ Using saved session")
+            print(" Using saved session")
             return True
 
         # No valid session - need to login with credentials
         if not GARMIN_EMAIL or not GARMIN_PASSWORD:
-            print("❌ Error: GARMIN_EMAIL and GARMIN_PASSWORD must be set in .env file")
+            print(" Error: GARMIN_EMAIL and GARMIN_PASSWORD must be set in .env file")
             print("   Copy .env.example to .env and fill in your credentials")
             print("   These are only needed for the first login to create a session.")
             return False
 
         try:
-            print(f"🔐 No saved session found. Logging in as {GARMIN_EMAIL}...")
+            print(f" No saved session found. Logging in as {GARMIN_EMAIL}...")
             self.client = Garmin(GARMIN_EMAIL, GARMIN_PASSWORD)
             self.client.login()
 
             # Save session for future use
             self._save_session()
-            print("✅ Authentication successful and session saved")
+            print(" Authentication successful and session saved")
             print(f"   Future syncs will use the saved session (no password needed)")
 
             return True
 
         except GarminConnectAuthenticationError as e:
-            print(f"❌ Authentication failed: {e}")
+            print(f" Authentication failed: {e}")
             print("   Check your email/password in .env file")
             return False
 
         except GarminConnectConnectionError as e:
-            print(f"❌ Connection error: {e}")
+            print(f" Connection error: {e}")
             print("   Check your internet connection")
             return False
 
         except Exception as e:
-            print(f"❌ Unexpected error during authentication: {e}")
+            print(f" Unexpected error during authentication: {e}")
             return False
 
     def _load_session(self) -> bool:
@@ -110,7 +110,7 @@ class GarminSync:
 
         try:
             # Configure garth to use our session directory
-            garth.configure(domain="garmin.com", garmin_client_id=None)
+            garth.configure(domain="garmin.com")
 
             # Try to resume the session
             garth.resume(str(session_dir))
@@ -121,17 +121,17 @@ class GarminSync:
             # Test if session is still valid
             try:
                 self.client.get_full_name()
-                print("🔓 Loaded saved session successfully")
+                print(" Loaded saved session successfully")
                 return True
             except:
-                print("⚠️  Saved session expired, will re-authenticate...")
+                print("  Saved session expired, will re-authenticate...")
                 # Clean up expired session
                 import shutil
                 shutil.rmtree(session_dir, ignore_errors=True)
                 return False
 
         except Exception as e:
-            print(f"⚠️  Could not load session: {e}")
+            print(f"  Could not load session: {e}")
             # Clean up corrupted session
             import shutil
             shutil.rmtree(session_dir, ignore_errors=True)
@@ -146,16 +146,16 @@ class GarminSync:
             # Save garth session
             garth.save(str(session_dir))
 
-            print(f"💾 Session saved to {session_dir}")
+            print(f" Session saved to {session_dir}")
             return True
 
         except Exception as e:
-            print(f"⚠️  Could not save session: {e}")
+            print(f"  Could not save session: {e}")
             return False
 
     def fetch_activities(self, days: int = 7) -> List[Dict]:
         """Fetch activities from last N days"""
-        print(f"\n📊 Fetching activities from last {days} days...")
+        print(f"\n Fetching activities from last {days} days...")
 
         activities = []
         try:
@@ -204,22 +204,22 @@ class GarminSync:
                         activity_data['hr_zones'] = None
 
                     activities.append(activity_data)
-                    print(f"  ✓ {activity_data['date']}: {activity_data['name']} - {activity_data['distance_km']}km")
+                    print(f"   {activity_data['date']}: {activity_data['name']} - {activity_data['distance_km']}km")
 
                 except Exception as e:
-                    print(f"  ⚠️  Could not fetch details for activity {activity_id}: {e}")
+                    print(f"    Could not fetch details for activity {activity_id}: {e}")
                     continue
 
-            print(f"✅ Fetched {len(activities)} activities")
+            print(f" Fetched {len(activities)} activities")
             return activities
 
         except Exception as e:
-            print(f"❌ Error fetching activities: {e}")
+            print(f" Error fetching activities: {e}")
             return []
 
     def fetch_training_status(self) -> Dict:
         """Fetch current training status and metrics"""
-        print("\n🎯 Fetching training status...")
+        print("\n Fetching training status...")
 
         today = datetime.now().strftime('%Y-%m-%d')
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
@@ -239,7 +239,7 @@ class GarminSync:
         # Try to get data from user summary (try today first, then yesterday)
         for date_to_try in [today, yesterday]:
             try:
-                print(f"  → Trying get_user_summary() for {date_to_try}...")
+                print(f"   Trying get_user_summary() for {date_to_try}...")
                 user_summary = self.client.get_user_summary(date_to_try)
 
                 if user_summary:
@@ -250,18 +250,18 @@ class GarminSync:
                     if resting_hr:
                         status_data['resting_hr'] = resting_hr
                         status_data['resting_hr_7d_avg'] = resting_hr_7d
-                        print(f"  ✓ Resting HR: {resting_hr} bpm (7-day avg: {resting_hr_7d} bpm)")
+                        print(f"   Resting HR: {resting_hr} bpm (7-day avg: {resting_hr_7d} bpm)")
                         break  # Got data, no need to try yesterday
                     elif date_to_try == today:
-                        print(f"  → No resting HR for today, trying yesterday...")
+                        print(f"   No resting HR for today, trying yesterday...")
 
             except Exception as e:
-                print(f"  ⚠️  get_user_summary({date_to_try}) failed: {type(e).__name__}: {e}")
+                print(f"    get_user_summary({date_to_try}) failed: {type(e).__name__}: {e}")
 
         # Try to get VO2max and training status (try today first, then yesterday)
         for date_to_try in [today, yesterday]:
             try:
-                print(f"  → Trying get_training_status() for {date_to_try}...")
+                print(f"   Trying get_training_status() for {date_to_try}...")
                 training_status = self.client.get_training_status(date_to_try)
 
                 if training_status:
@@ -289,7 +289,7 @@ class GarminSync:
                                 status_data['vo2max_running'] = running_vo2
 
                         if status_data['vo2max'] or status_data['vo2max_running']:
-                            print(f"  ✓ VO2max: {status_data['vo2max']} (Running: {status_data['vo2max_running']})")
+                            print(f"   VO2max: {status_data['vo2max']} (Running: {status_data['vo2max_running']})")
 
                     # Extract training load
                     load_balance = training_status.get('mostRecentTrainingLoadBalance')
@@ -303,7 +303,7 @@ class GarminSync:
                                     break
 
                         if status_data['training_load_7d']:
-                            print(f"  ✓ Training Load 7d: {status_data['training_load_7d']}")
+                            print(f"   Training Load 7d: {status_data['training_load_7d']}")
 
                     # Extract training status
                     training_status_obj = training_status.get('mostRecentTrainingStatus')
@@ -330,24 +330,24 @@ class GarminSync:
                                     break
 
                         if status_data['training_effect_label']:
-                            print(f"  ✓ Training Status: {status_data['training_effect_label']}")
+                            print(f"   Training Status: {status_data['training_effect_label']}")
                         if status_data['recovery_time_hours']:
-                            print(f"  ✓ Recovery Time: {status_data['recovery_time_hours']}h")
+                            print(f"   Recovery Time: {status_data['recovery_time_hours']}h")
 
                     # If we got meaningful data, stop trying other dates
                     if status_data['vo2max'] or status_data['training_load_7d'] or status_data['training_effect_label']:
                         break
                     elif date_to_try == today:
-                        print(f"  → No training data for today, trying yesterday...")
+                        print(f"   No training data for today, trying yesterday...")
 
             except Exception as e:
-                print(f"  ⚠️  get_training_status({date_to_try}) failed: {type(e).__name__}: {e}")
+                print(f"    get_training_status({date_to_try}) failed: {type(e).__name__}: {e}")
 
         # Check if we got any data
         if any(v for k, v in status_data.items() if k != 'fetched_at'):
-            print("✅ Training status fetch completed (partial data)")
+            print(" Training status fetch completed (partial data)")
         else:
-            print("❌ No training status data available")
+            print(" No training status data available")
             print("   This may be normal if:")
             print("   - Your watch needs to sync recent activities")
             print("   - VO2max requires more training history")
@@ -357,7 +357,7 @@ class GarminSync:
 
     def fetch_sleep(self, days: int = 7) -> List[Dict]:
         """Fetch sleep data from last N days"""
-        print(f"\n😴 Fetching sleep data from last {days} days...")
+        print(f"\n Fetching sleep data from last {days} days...")
 
         sleep_data = []
         try:
@@ -380,22 +380,22 @@ class GarminSync:
                             'sleep_score': sleep_dto.get('sleepScores', {}).get('overall', {}).get('value'),
                         }
                         sleep_data.append(sleep_entry)
-                        print(f"  ✓ {date}: {sleep_entry['sleep_hours']}h (score: {sleep_entry['sleep_score']})")
+                        print(f"   {date}: {sleep_entry['sleep_hours']}h (score: {sleep_entry['sleep_score']})")
 
                 except Exception as e:
-                    print(f"  ⚠️  No sleep data for {date}")
+                    print(f"    No sleep data for {date}")
                     continue
 
-            print(f"✅ Fetched {len(sleep_data)} sleep records")
+            print(f" Fetched {len(sleep_data)} sleep records")
             return sleep_data
 
         except Exception as e:
-            print(f"❌ Error fetching sleep: {e}")
+            print(f" Error fetching sleep: {e}")
             return []
 
     def fetch_hrv(self, days: int = 7) -> List[Dict]:
         """Fetch HRV data from last N days"""
-        print(f"\n❤️  Fetching HRV data from last {days} days...")
+        print(f"\n  Fetching HRV data from last {days} days...")
 
         hrv_data = []
         try:
@@ -415,26 +415,26 @@ class GarminSync:
                             'status': hrv_summary.get('status'),
                         }
                         hrv_data.append(hrv_entry)
-                        print(f"  ✓ {date}: {hrv_entry['last_night_avg']}ms (status: {hrv_entry['status']})")
+                        print(f"   {date}: {hrv_entry['last_night_avg']}ms (status: {hrv_entry['status']})")
 
                 except Exception as e:
                     # HRV not available for all users/dates
                     continue
 
             if hrv_data:
-                print(f"✅ Fetched {len(hrv_data)} HRV records")
+                print(f" Fetched {len(hrv_data)} HRV records")
             else:
-                print("ℹ️  No HRV data available (may not be supported by your device)")
+                print("  No HRV data available (may not be supported by your device)")
 
             return hrv_data
 
         except Exception as e:
-            print(f"⚠️  HRV data not available: {e}")
+            print(f"  HRV data not available: {e}")
             return []
 
     def fetch_stress(self, days: int = 7) -> List[Dict]:
         """Fetch stress data from last N days (useful recovery metric)"""
-        print(f"\n😰 Fetching stress data from last {days} days...")
+        print(f"\n Fetching stress data from last {days} days...")
 
         stress_data = []
         try:
@@ -462,20 +462,20 @@ class GarminSync:
                                 del stress_entry[key]
 
                         stress_data.append(stress_entry)
-                        print(f"  ✓ {date}: avg={stress_entry['avg_stress']}, rest={stress_entry['rest_stress']}")
+                        print(f"   {date}: avg={stress_entry['avg_stress']}, rest={stress_entry['rest_stress']}")
 
                 except Exception as e:
                     continue
 
             if stress_data:
-                print(f"✅ Fetched {len(stress_data)} stress records")
+                print(f" Fetched {len(stress_data)} stress records")
             else:
-                print("ℹ️  No stress data available")
+                print("  No stress data available")
 
             return stress_data
 
         except Exception as e:
-            print(f"⚠️  Stress data not available: {e}")
+            print(f"  Stress data not available: {e}")
             return []
 
     def download_fit_file(self, activity_id: int, output_dir: Path = None) -> Optional[Path]:
@@ -510,12 +510,12 @@ class GarminSync:
             return output_path
 
         except Exception as e:
-            print(f"  ⚠️  Could not download FIT file: {e}")
+            print(f"    Could not download FIT file: {e}")
             return None
 
     def download_recent_fit_files(self, days: int = 7) -> List[Path]:
         """Download FIT files for recent activities"""
-        print(f"\n📥 Downloading FIT files for activities...")
+        print(f"\n Downloading FIT files for activities...")
 
         downloaded = []
         fit_dir = CACHE_DIR / "fit_files"
@@ -526,22 +526,22 @@ class GarminSync:
 
             # Skip if already downloaded
             if fit_path.exists():
-                print(f"  ⏭️  {activity['date']}: Already downloaded")
+                print(f"    {activity['date']}: Already downloaded")
                 downloaded.append(fit_path)
                 continue
 
-            print(f"  ⬇️  {activity['date']}: {activity['name']}...")
+            print(f"    {activity['date']}: {activity['name']}...")
             path = self.download_fit_file(activity_id)
             if path:
                 downloaded.append(path)
-                print(f"      ✓ Saved to {path.name}")
+                print(f"       Saved to {path.name}")
 
-        print(f"✅ {len(downloaded)} FIT files available")
+        print(f" {len(downloaded)} FIT files available")
         return downloaded
 
     def fetch_user_profile(self) -> Dict:
         """Fetch user profile info"""
-        print("\n👤 Fetching user profile...")
+        print("\n Fetching user profile...")
 
         try:
             profile = self.client.get_user_profile()
@@ -554,17 +554,17 @@ class GarminSync:
                 'height_cm': profile.get('height'),
             }
 
-            print(f"  ✓ Profile: {profile_data['display_name']}")
+            print(f"   Profile: {profile_data['display_name']}")
             return profile_data
 
         except Exception as e:
-            print(f"❌ Error fetching profile: {e}")
+            print(f" Error fetching profile: {e}")
             return {}
 
     def sync_all(self, days: int = 7, download_fit: bool = False) -> bool:
         """Sync all data from Garmin Connect"""
         print("=" * 60)
-        print("🏃 GARMIN CONNECT DATA SYNC")
+        print("GARMIN CONNECT DATA SYNC")
         print("=" * 60)
 
         if not self.authenticate():
@@ -596,13 +596,13 @@ class GarminSync:
         self.save_cache()
 
         print("\n" + "=" * 60)
-        print("✅ SYNC COMPLETE")
+        print("SYNC COMPLETE")
         print("=" * 60)
-        print(f"📁 Data cached to: {CACHE_FILE}")
-        print(f"📊 Activities: {len(self.data['activities'])}")
-        print(f"😴 Sleep records: {len(self.data['sleep'])}")
-        print(f"❤️  HRV records: {len(self.data['hrv'])}")
-        print(f"😰 Stress records: {len(self.data.get('stress', []))}")
+        print(f" Data cached to: {CACHE_FILE}")
+        print(f" Activities: {len(self.data['activities'])}")
+        print(f" Sleep records: {len(self.data['sleep'])}")
+        print(f"  HRV records: {len(self.data['hrv'])}")
+        print(f" Stress records: {len(self.data.get('stress', []))}")
 
         return True
 

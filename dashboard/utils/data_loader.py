@@ -3,16 +3,29 @@ Data loading utilities for running analytics dashboard
 """
 
 import json
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 import pandas as pd
 
 
-# Path to cache files
-GARMIN_CACHE_FILE = Path(__file__).parent.parent.parent / "tracking" / "garmin-cache.json"
-STRAVA_CACHE_FILE = Path(__file__).parent.parent.parent / "tracking" / "strava-cache.json"
-UNIFIED_CACHE_FILE = Path(__file__).parent.parent.parent / "tracking" / "unified-cache.json"
+# Environment variable to use sample data (for GitHub demos)
+# Default: false (use real personal data in tracking/)
+USE_SAMPLE_DATA = os.getenv("USE_SAMPLE_DATA", "false").lower() == "true"
+DATA_DIR = "sample-data" if USE_SAMPLE_DATA else "tracking"
+
+# Path to cache files (configurable based on USE_SAMPLE_DATA)
+BASE_DIR = Path(__file__).parent.parent.parent
+GARMIN_CACHE_FILE = BASE_DIR / DATA_DIR / "garmin-cache.json"
+STRAVA_CACHE_FILE = BASE_DIR / DATA_DIR / "strava-cache.json"
+UNIFIED_CACHE_FILE = BASE_DIR / DATA_DIR / "unified-cache.json"
+
+# Log which data source is being used
+if USE_SAMPLE_DATA:
+    print(f"📊 Using SAMPLE DATA from {DATA_DIR}/")
+else:
+    print(f"📊 Using PERSONAL DATA from {DATA_DIR}/")
 
 
 def load_garmin_data() -> Dict:

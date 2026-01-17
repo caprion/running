@@ -5,16 +5,24 @@ Display the current season's training plan with all details.
 """
 
 import streamlit as st
+import os
 from pathlib import Path
 
 # Page config
 st.set_page_config(page_title="Season Plan", page_icon="📋", layout="wide")
 
-st.title("📋 2026 Spring HM Sub-2:00 Campaign")
-st.markdown("**Duration:** Jan 5 - May 24, 2026 (20 weeks)")
+# Check if using sample data
+USE_SAMPLE_DATA = os.getenv("USE_SAMPLE_DATA", "false").lower() == "true"
 
-# Path to plan file
-plan_path = Path(__file__).parent.parent.parent / "seasons" / "2026-spring-hm-sub2" / "plan.md"
+if USE_SAMPLE_DATA:
+    st.title("📋 2025 Half Marathon Training Plan")
+    st.markdown("**Duration:** Sub-2 Hour HM Campaign (Sample Data)")
+    base_dir = Path(__file__).parent.parent.parent / "sample-data"
+    plan_path = base_dir / "seasons" / "2025-sample-runner" / "plan.md"
+else:
+    st.title("📋 2026 Spring HM Sub-2:00 Campaign")
+    st.markdown("**Duration:** Jan 5 - May 24, 2026 (20 weeks)")
+    plan_path = Path(__file__).parent.parent.parent / "seasons" / "2026-spring-hm-sub2" / "plan.md"
 
 try:
     if plan_path.exists():

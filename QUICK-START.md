@@ -121,6 +121,28 @@ This is normal on first run. The script will create it automatically.
 - **Read detailed docs**: See [WORKFLOW.md](WORKFLOW.md) for advanced usage
 - **Customize**: Edit training plans in `seasons/` directory
 
+## Demo Mode (Try Without Syncing)
+
+Want to explore the dashboard before syncing your data? Use the included sample dataset:
+
+```powershell
+# Launch dashboard with 12 months of sample data
+$env:USE_SAMPLE_DATA='true'
+streamlit run dashboard/app.py
+
+# When done, return to personal mode
+Remove-Item Env:\USE_SAMPLE_DATA
+streamlit run dashboard/app.py
+```
+
+The sample data simulates a sub-2hr half marathon training campaign with realistic:
+- 161 activities over 12 months
+- Varied workout types (easy, tempo, long runs, intervals)
+- Heart rate zones and cadence metrics
+- Sleep and recovery data
+
+See [sample-data/README.md](sample-data/README.md) for more details.
+
 ## Advanced Options
 
 ### Dry run (test without saving)
