@@ -125,23 +125,23 @@ This is normal on first run. The script will create it automatically.
 
 Want to explore the dashboard before syncing your data? Use the included sample dataset:
 
-```powershell
-# Launch dashboard with 12 months of sample data
-$env:USE_SAMPLE_DATA='true'
+```bash
+# Linux/Mac
+export USE_SAMPLE_DATA=true
 streamlit run dashboard/app.py
 
-# When done, return to personal mode
-Remove-Item Env:\USE_SAMPLE_DATA
+# Windows PowerShell
+$env:USE_SAMPLE_DATA='true'
 streamlit run dashboard/app.py
 ```
 
-The sample data simulates a sub-2hr half marathon training campaign with realistic:
+The sample data simulates a sub-2hr half marathon training campaign with:
 - 161 activities over 12 months
 - Varied workout types (easy, tempo, long runs, intervals)
 - Heart rate zones and cadence metrics
 - Sleep and recovery data
 
-See [sample-data/README.md](sample-data/README.md) for more details.
+See [sample-data/README.md](sample-data/README.md) and pre-generated [HTML dashboards](media/dashboard-snapshots/) for a preview.
 
 ## Advanced Options
 

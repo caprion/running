@@ -48,27 +48,33 @@ streamlit run dashboard/app.py
 
 ## Demo Mode with Sample Data
 
-Want to explore the dashboard without syncing your own Garmin data?
+Explore the dashboard features before setting up your own Garmin sync!
 
-### 📊 **[View Interactive Dashboards](media/dashboard-snapshots/index.html)** ← Start Here!
+### 📊 View Interactive Dashboards
 
-Browse 6 interactive HTML dashboards showing 12 months of synthetic training data for a sub-2hr half marathon campaign. No installation required - works directly on GitHub!
+Browse 6 interactive HTML dashboards in [media/dashboard-snapshots/](media/dashboard-snapshots/):
 
-### Run Locally with Sample Data
+- **[Overview](media/dashboard-snapshots/overview.html)** - 12-week volume trends
+- **[Consistency Guardian](media/dashboard-snapshots/consistency.html)** - Weekly status analysis
+- **[Training Load](media/dashboard-snapshots/training-load.html)** - Sleep & HR zones
+- **[Form Analysis](media/dashboard-snapshots/form.html)** - Cadence trends
+- **[Race Confidence](media/dashboard-snapshots/race-confidence.html)** - Pace degradation
+- **[Recovery](media/dashboard-snapshots/recovery.html)** - Sleep stages
 
-```powershell
-# Windows PowerShell
-$env:USE_SAMPLE_DATA='true'
-streamlit run dashboard/app.py
+*Note: Download the HTML files and open in your browser for full interactivity*
 
-# Return to personal data
-Remove-Item Env:\USE_SAMPLE_DATA
+### Run Full Dashboard Locally
+
+```bash
+# Use sample data (no Garmin sync required)
+export USE_SAMPLE_DATA=true  # Linux/Mac
+# or
+$env:USE_SAMPLE_DATA='true'  # Windows PowerShell
+
 streamlit run dashboard/app.py
 ```
 
-The sample data contains 161 activities over 12 months with realistic pacing, heart rate zones, cadence metrics, sleep, and recovery data. See [sample-data/README.md](sample-data/README.md) for details.
-
-**⚠️ Privacy Note:** Your personal data in `tracking/`, `seasons/`, and `media/` is protected by `.gitignore` and will never be committed to version control. Sample data is for GitHub demonstrations only.
+The sample dataset includes 161 activities over 12 months with realistic pacing, heart rate zones, cadence, sleep, and recovery data. See [sample-data/README.md](sample-data/README.md) for details.
 
 ## Documentation
 
@@ -121,8 +127,4 @@ Dashboard (visualization)
 
 ## License
 
-Personal project - MIT License
-
-## Personal Training Dashboard
-
-For the author's personal training tracking, see [TRAINING-DASHBOARD.md](TRAINING-DASHBOARD.md).
+MIT License - Free to use and modify for your own training tracking.
