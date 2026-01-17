@@ -1,6 +1,35 @@
-# Sync Scripts Documentation
+# Scripts Documentation
 
-## Core Scripts (Use These)
+## Garmin Workout Creation
+
+### `create-garmin-workouts.py` - Create Structured Workouts
+
+Creates and schedules workouts in Garmin Connect.
+
+**Usage:**
+```bash
+# Preview workouts (dry run)
+python scripts/create-garmin-workouts.py --week 3 --dry-run
+
+# Create and schedule workouts
+python scripts/create-garmin-workouts.py --week 3
+```
+
+**What it does:**
+1. Authenticates with Garmin Connect
+2. Creates structured workouts with pace targets, HR zones
+3. Schedules workouts to correct dates
+4. Supports warmup/cooldown with lap button
+5. Easy runs with no targets
+
+**Adding new weeks:**
+Edit `get_week_workouts()` function in the script. Copy Week 3 structure.
+
+See [GARMIN-WORKOUT-AUTOMATION.md](../GARMIN-WORKOUT-AUTOMATION.md) for details.
+
+---
+
+## Data Sync Scripts
 
 ### `incremental-sync.py` - Primary Sync Script
 
