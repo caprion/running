@@ -15,7 +15,7 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.data_loader import activities_to_dataframe, load_activities
+from utils.data_loader import activities_to_dataframe, load_activities, get_cadence_pace_analysis
 
 # Page config
 st.set_page_config(page_title="Form Analysis", page_icon="👟", layout="wide")
@@ -277,10 +277,183 @@ try:
     st.plotly_chart(fig_cadence, use_container_width=True)
 
     # ============================================
-    # CADENCE VS PACE RELATIONSHIP
+    # CADENCE VS PACE RELATIONSHIP (NEW)
     # ============================================
     st.markdown("---")
     st.subheader("🔄 Cadence-Pace Relationship")
+    
+    # Load pre-calculated analysis
+    cadence_analysis = get_cadence_pace_analysis()
+    
+    if cadence_analysis and cadence_analysis.get('lap_data'):
+        lap_data = cadence_analysis['lap_data']
+        regression = cadence_analysis.get('regression', {})
+        bracket_stats = cadence_analysis.get('bracket_stats', {})
+        
+        # Display key metrics
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            correlation = regression.get('correlation', 0)
+            corr_status = "🟢" if abs(correlation) > 0.7 else "🟡"
+            st.metric(
+                "Correlation",
+                f"{correlation:.2f}",
+                help="How strongly cadence relates to pace. -0.7 to -1.0 is normal (cadence increases as you run faster)"
+            )
+        
+        with col2:
+            slope = regression.get('slope', 0)
+            st.metric(
+                "Cadence Change",
+                f"{slope:.1f} spm/min",
+                help="How much your cadence changes per 1 min/km pace change"
+            )
+        
+        with col3:
+            r_squared = regression.get('r_squared', 0)
+            st.metric(
+                "R² (Consistency)",
+                f"{r_squared:.2f}",
+                help="How consistent your cadence-pace relationship is. Higher = more predictable form."
+            )
+        
+        # Main scatter plot with trendline
+        import pandas as pd
+        lap_df_analysis = pd.DataFrame(lap_data)
+        
+        fig_pace_cadence = go.Figure()
+        
+        # Scatter plot of all laps
+        fig_pace_cadence.add_trace(go.Scatter(
+            x=lap_df_analysis['pace_min_km'],
+            y=lap_df_analysis['cadence'],
+            mode='markers',
+            name='Laps',
+            marker=dict(
+                size=8,
+                color=lap_df_analysis['pace_min_km'],
+                colorscale='RdYlGn_r',
+                opacity=0.6,
+                showscale=True,
+                colorbar=dict(title="Pace (min/km)")
+            ),
+            hovertemplate='Pace: %{x:.1f} min/km<br>Cadence: %{y:.0f} spm<extra></extra>'
+        ))
+        
+        # Trendline
+        slope = regression.get('slope', 0)
+        intercept = regression.get('intercept', 0)
+        x_range = [lap_df_analysis['pace_min_km'].min(), lap_df_analysis['pace_min_km'].max()]
+        y_trend = [slope * x + intercept for x in x_range]
+        
+        fig_pace_cadence.add_trace(go.Scatter(
+            x=x_range,
+            y=y_trend,
+            mode='lines',
+            name=f'Trend: {slope:.1f}×pace + {intercept:.0f}',
+            line=dict(color='#e74c3c', width=3, dash='solid')
+        ))
+        
+        # Target zone overlay (optimal cadence ranges by pace)
+        # Green zone: recommended cadence for each pace
+        target_zones = [
+            {'pace_min': 4.5, 'pace_max': 5.0, 'cad_min': 170, 'cad_max': 185, 'label': 'Fast'},
+            {'pace_min': 5.0, 'pace_max': 5.5, 'cad_min': 165, 'cad_max': 180, 'label': 'Tempo'},
+            {'pace_min': 5.5, 'pace_max': 6.0, 'cad_min': 162, 'cad_max': 175, 'label': 'Moderate'},
+            {'pace_min': 6.0, 'pace_max': 6.5, 'cad_min': 158, 'cad_max': 170, 'label': 'Easy'},
+            {'pace_min': 6.5, 'pace_max': 7.0, 'cad_min': 155, 'cad_max': 168, 'label': 'Recovery'},
+            {'pace_min': 7.0, 'pace_max': 8.0, 'cad_min': 152, 'cad_max': 165, 'label': 'Very Easy'},
+        ]
+        
+        for zone in target_zones:
+            fig_pace_cadence.add_shape(
+                type="rect",
+                x0=zone['pace_min'], x1=zone['pace_max'],
+                y0=zone['cad_min'], y1=zone['cad_max'],
+                fillcolor="rgba(46, 204, 113, 0.1)",
+                line=dict(color="rgba(46, 204, 113, 0.3)", width=1),
+            )
+        
+        fig_pace_cadence.update_layout(
+            title="Cadence vs Pace (with optimal zones)",
+            xaxis_title="Pace (min/km)",
+            yaxis_title="Cadence (spm)",
+            xaxis=dict(autorange='reversed'),  # Faster pace on right
+            height=450,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02)
+        )
+        
+        st.plotly_chart(fig_pace_cadence, use_container_width=True)
+        
+        # Pace bracket comparison table
+        st.markdown("#### 📊 Cadence by Pace Bracket")
+        
+        # Define bracket labels
+        bracket_labels = {
+            '1_fast': ('⚡ Fast (<5:00)', '#27ae60'),
+            '2_tempo': ('🔥 Tempo (5:00-5:30)', '#2ecc71'),
+            '3_moderate': ('🏃 Moderate (5:30-6:00)', '#f1c40f'),
+            '4_easy': ('🚶 Easy (6:00-6:30)', '#e67e22'),
+            '5_recovery': ('💤 Recovery (6:30-7:00)', '#e74c3c'),
+            '6_very_easy': ('🐢 Very Easy (>7:00)', '#c0392b')
+        }
+        
+        # Target cadence by bracket
+        target_cadence = {
+            '1_fast': (170, 185),
+            '2_tempo': (165, 180),
+            '3_moderate': (162, 175),
+            '4_easy': (158, 170),
+            '5_recovery': (155, 168),
+            '6_very_easy': (152, 165)
+        }
+        
+        # Create comparison table
+        cols = st.columns(len(bracket_stats))
+        for i, (bracket, stats) in enumerate(sorted(bracket_stats.items())):
+            if bracket in bracket_labels:
+                label, color = bracket_labels[bracket]
+                target = target_cadence.get(bracket, (150, 175))
+                actual = stats['avg_cadence']
+                
+                # Determine status
+                if target[0] <= actual <= target[1]:
+                    status = "✅"
+                elif actual < target[0]:
+                    status = "⚠️ Low"
+                else:
+                    status = "🟡 High"
+                
+                with cols[i]:
+                    st.markdown(f"**{label.split(' ')[0]}**")
+                    st.metric(
+                        label.split(' ', 1)[1] if len(label.split(' ', 1)) > 1 else bracket,
+                        f"{actual:.0f} spm",
+                        delta=f"{status}" if status != "✅" else None,
+                        delta_color="off"
+                    )
+                    st.caption(f"Target: {target[0]}-{target[1]} ({stats['lap_count']} laps)")
+        
+        # Insight box
+        slope = regression.get('slope', 0)
+        if abs(slope) > 10:
+            insight = "⚠️ **High cadence variation** - Your cadence changes significantly with pace. Focus on maintaining higher cadence at easy paces."
+        elif abs(slope) < 5:
+            insight = "✅ **Consistent cadence** - Your cadence stays relatively stable across paces. Good form efficiency!"
+        else:
+            insight = "🟡 **Normal variation** - Your cadence-pace relationship is typical. Room for improvement at easy paces."
+        
+        st.info(insight)
+        
+    else:
+        st.warning("Cadence-pace analysis not available. Run `python scripts/incremental-sync.py` to calculate.")
+    
+    # ============================================
+    # CADENCE vs STRIDE SCATTER
+    # ============================================
+    st.markdown("---")
+    st.subheader("🎯 Cadence vs Stride")
     
     col1, col2 = st.columns(2)
     

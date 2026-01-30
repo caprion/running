@@ -255,6 +255,12 @@ def get_sleep_data() -> List[Dict]:
     return data.get('sleep', [])
 
 
+def get_cadence_pace_analysis() -> Dict:
+    """Get pre-calculated cadence vs pace analysis"""
+    data = load_garmin_data()
+    return data.get('cadence_pace_analysis', {})
+
+
 def get_last_sync_time() -> Optional[str]:
     """Get last sync timestamp from unified cache or individual sources"""
     # Check unified cache first
