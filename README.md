@@ -5,6 +5,8 @@
 
 **Local Garmin Connect sync + Streamlit dashboard for running analytics.** Track activities, monitor consistency, analyze training load, and plan races—all on your machine. No cloud uploads.
 
+![Dashboard Preview](media/dashboard-snapshots/dashboard-preview.png)
+
 ---
 
 ## Try the Demo
