@@ -1,18 +1,18 @@
 # Dashboard Snapshots
 
-This directory contains **interactive HTML dashboards** generated from sample data.
+This directory contains **interactive HTML dashboards** generated from sample data. Each page mirrors the Streamlit dashboard layout with a header bar, navigation, and "Sample Data" badge.
 
 ## 🌐 View Dashboards
 
 **To view these dashboards:**
 1. Clone this repository
-2. Open any `.html` file in your browser
-3. Or run `index.html` for a navigation menu
+2. Open `index.html` for the hub, or any `.html` file directly
+3. All pages include a header with "← All Dashboards" link back to the hub
 
 ### Available Dashboards
 
 1. **overview.html** - 12-week volume trends and key metrics
-2. **consistency.html** - Weekly status bars and distribution
+2. **consistency.html** - Weekly status bars and distribution (green/yellow/red)
 3. **training-load.html** - Sleep analysis and HR zones
 4. **form.html** - Cadence distribution and trends  
 5. **race-confidence.html** - Pace degradation on long runs

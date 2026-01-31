@@ -1,6 +1,20 @@
 # Running Training Tracker
 
-Track your Garmin Connect running activities locally with a visual dashboard.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+**Local Garmin Connect sync + Streamlit dashboard for running analytics.** Track activities, monitor consistency, analyze training load, and plan races—all on your machine. No cloud uploads.
+
+---
+
+## Try the Demo
+
+**No Garmin account?** Explore interactive dashboards with sample data:
+
+- **[View HTML Dashboards](media/dashboard-snapshots/index.html)** — Open in browser, no install
+- Or run the full dashboard: `USE_SAMPLE_DATA=true streamlit run dashboard/app.py`
+
+---
 
 ## Features
 
@@ -10,14 +24,16 @@ Track your Garmin Connect running activities locally with a visual dashboard.
 - 💓 **Heart rate data** with per-km splits and zone analysis
 - 📈 **Training load** tracking and volume monitoring
 - 🎯 **Season planning** with race readiness metrics
-- 🔒 **Local storage** - all data stays on your machine
+- 🔒 **Local storage** — all data stays on your machine
 
 ### Advanced Features
-- 🏋️ **Create Garmin workouts** - Build structured workouts and schedule to watch
-- ⚡ **Weekly summaries** - Automated training reports
-- 🎪 **Consistency tracking** - Volume floor monitoring
-- 🔍 **Data validation** - Integrity checks and backups
-- 📝 **FIT file parsing** - Deep-dive per-second analysis
+- 🏋️ **Create Garmin workouts** — Build structured workouts and schedule to watch
+- ⚡ **Weekly summaries** — Automated training reports
+- 🎪 **Consistency tracking** — Volume floor monitoring (green/yellow/red)
+- 🔍 **Data validation** — Integrity checks and backups
+- 📝 **FIT file parsing** — Deep-dive per-second analysis
+
+---
 
 ## Quick Start
 
@@ -26,7 +42,12 @@ Track your Garmin Connect running activities locally with a visual dashboard.
 ```bash
 git clone <repo-url>
 cd running
+
+# Core sync (required)
 pip install -r scripts/requirements.txt
+
+# Dashboard (optional)
+pip install -r requirements-dashboard.txt
 ```
 
 ### 2. Setup Garmin Authentication
@@ -47,73 +68,82 @@ python scripts/incremental-sync.py --days 90
 python scripts/daily-sync.py
 ```
 
-### 4. View Dashboard (Optional)
+### 4. View Dashboard
 
 ```bash
-pip install streamlit pandas plotly
 streamlit run dashboard/app.py
 ```
 
-### Dashboard Pages
+Opens at `http://localhost:8501` (use `--server.port 8502` if 8501 is in use).
 
-The dashboard includes 10 interactive analysis pages:
+---
 
-1. **📊 Consistency Guardian** - Weekly volume tracking with color-coded status (green/yellow/red), streaks, and rolling averages
-2. **🎯 Season Compare** - Side-by-side comparison of training seasons with VO2max progression and quality session breakdowns
-3. **🏁 Race Confidence** - Pace sustainability analysis, race calculator, and fatigue resistance metrics
-4. **📋 Season Plan** - Training plan calendar with workout scheduling and volume tracking
-5. **📝 Weekly Logs** - Detailed weekly training summaries with subjective notes and ratings
-6. **🚨 Risk Monitor** - Injury risk indicators based on load spikes, consistency violations, and recovery metrics
-7. **📈 Training Load** - ACWR (acute:chronic workload ratio), sleep quality, and heart rate zone distribution
-8. **💤 Recovery** - Sleep stages analysis, resting heart rate trends, and recovery score tracking
-9. **👟 Form** - Running form metrics including cadence trends, ground contact time, and stride analysis
-10. **✅ Compliance** - Training plan adherence tracking with completed vs. planned workouts
+## Dashboard Pages
 
-## Demo Mode with Sample Data
+| Page | Description |
+|------|-------------|
+| **📊 Consistency Guardian** | Weekly volume with color-coded status, streaks, rolling averages |
+| **🎯 Season Compare** | Side-by-side season comparison, VO2max progression |
+| **🏁 Race Confidence** | Pace sustainability, race calculator, fatigue resistance |
+| **📋 Season Plan** | Training plan calendar, workout scheduling |
+| **📝 Weekly Logs** | Detailed weekly summaries, notes, ratings |
+| **🚨 Risk Monitor** | Load spikes, consistency violations, recovery alerts |
+| **📈 Training Load** | ACWR, sleep quality, HR zone distribution |
+| **💤 Recovery** | Sleep stages, resting HR trends, recovery score |
+| **👟 Form** | Cadence trends, ground contact time, stride analysis |
+| **✅ Compliance** | Plan adherence, completed vs planned workouts |
 
-Explore the dashboard features before setting up your own Garmin sync!
+---
 
-### 📊 View Interactive Dashboards
+## Demo Mode (Try Without Syncing)
 
-Browse 6 interactive HTML dashboards in [media/dashboard-snapshots/](media/dashboard-snapshots/):
+Explore the dashboard with sample data—no Garmin account required.
 
-- **[Overview](media/dashboard-snapshots/overview.html)** - 12-week volume trends
-- **[Consistency Guardian](media/dashboard-snapshots/consistency.html)** - Weekly status analysis
-- **[Training Load](media/dashboard-snapshots/training-load.html)** - Sleep & HR zones
-- **[Form Analysis](media/dashboard-snapshots/form.html)** - Cadence trends
-- **[Race Confidence](media/dashboard-snapshots/race-confidence.html)** - Pace degradation
-- **[Recovery](media/dashboard-snapshots/recovery.html)** - Sleep stages
+### Option A: Interactive HTML Dashboards
 
-*Note: Download the HTML files and open in your browser for full interactivity*
+Browse pre-generated dashboards in [media/dashboard-snapshots/](media/dashboard-snapshots/):
 
-### Run Full Dashboard Locally
+- **[index.html](media/dashboard-snapshots/index.html)** — Hub with links to all pages
+- **overview.html** — 12-week volume trends
+- **consistency.html** — Weekly status analysis
+- **training-load.html** — Sleep & HR zones
+- **form.html** — Cadence trends
+- **race-confidence.html** — Pace degradation
+- **recovery.html** — Sleep stages
+
+*Download and open in a browser for full interactivity.*
+
+### Option B: Full Streamlit Dashboard
 
 ```bash
-# Use sample data (no Garmin sync required)
-export USE_SAMPLE_DATA=true  # Linux/Mac
-# or
-$env:USE_SAMPLE_DATA='true'  # Windows PowerShell
+# Linux/Mac
+export USE_SAMPLE_DATA=true
+streamlit run dashboard/app.py
 
+# Windows PowerShell
+$env:USE_SAMPLE_DATA='true'
 streamlit run dashboard/app.py
 ```
 
-The sample dataset includes 161 activities over 12 months with realistic pacing, heart rate zones, cadence, sleep, and recovery data. See [sample-data/README.md](sample-data/README.md) for details.
+Sample dataset: 161 activities over 12 months. See [sample-data/README.md](sample-data/README.md).
+
+---
 
 ## Documentation
 
-### Getting Started
-- **[Quick Start Guide](QUICK-START.md)** - 5-minute setup for syncing
-- **[Sample Dashboards](media/dashboard-snapshots/)** - View examples before installing
+| Guide | Description |
+|-------|-------------|
+| [Quick Start](QUICK-START.md) | 5-minute setup for syncing |
+| [Scripts Reference](scripts/README.md) | All scripts documented |
+| [Workflow Guide](WORKFLOW.md) | Daily/weekly check-ins, gait analysis |
+| [Garmin Workouts](GARMIN-WORKOUT-AUTOMATION.md) | Build and schedule structured workouts |
+| [Architecture](docs/ARCHITECTURE.md) | System design and data flow |
+| [Dashboard Guide](dashboard/README.md) | Using the Streamlit dashboard |
 
-### Detailed Guides
-- **[Scripts Reference](scripts/README.md)** - Complete documentation of all scripts
-- **[Workflow Guide](WORKFLOW.md)** - Daily/weekly check-in processes and gait analysis
-- **[Garmin Workout Creation](GARMIN-WORKOUT-AUTOMATION.md)** - Build and schedule structured workouts
-- **[Garmin API Reference](docs/garmin-api-quick-reference.md)** - API endpoints and workout format
-- **[Architecture](docs/ARCHITECTURE.md)** - System design and data flow
-- **[Dashboard Guide](dashboard/README.md)** - Using the Streamlit dashboard
+---
 
-### Common Tasks
+## Common Commands
+
 | Task | Command |
 |------|---------|
 | Initial sync (90 days) | `python scripts/incremental-sync.py --days 90` |
@@ -124,10 +154,7 @@ The sample dataset includes 161 activities over 12 months with realistic pacing,
 | Verify data | `python scripts/verify-data-integrity.py` |
 | Parse FIT file | `python scripts/parse-fit.py path/to/file.fit` |
 
-### Training Resources
-- **[Arm Swing Drills](resources/arm-swing-drills-guide.md)** - Form improvement exercises
-- **[Garmin Watch Settings](resources/garmin-watch-settings-guide.md)** - Optimal watch configuration
-- **[Training Plan Template](resources/20_Week_Training_Plan.xlsx)** - Excel-based plan builder
+---
 
 ## Project Structure
 
@@ -142,121 +169,50 @@ running/
 │   ├── consistency-guardian.py  # Volume tracking
 │   ├── parse-fit.py             # FIT file parser
 │   ├── import-session.py        # Auth setup
-│   ├── generate-sample-data.py  # Demo data generator
 │   └── export-dashboards-html.py # HTML dashboard exporter
 │
-├── dashboard/                   # Streamlit visualization
+├── dashboard/                    # Streamlit visualization
 │   ├── app.py                   # Main dashboard
 │   └── pages/                   # 10 analysis pages
 │
 ├── tracking/                    # Local data cache (gitignored)
 │   ├── unified-cache.json       # Single source of truth
-│   ├── garmin-cache.json        # Garmin API data
 │   ├── backups/                 # Auto backups
 │   └── fit_files/               # Raw FIT files
 │
 ├── sample-data/                 # Demo dataset
-│   ├── unified-cache.json       # Sample activities
-│   └── seasons/                 # Sample training plans
-│
-├── seasons/                     # Your training plans (gitignored)
-│   └── [season-name]/
-│       ├── plan.md              # Training plan
-│       └── weekly-logs/         # Weekly reflections
-│
-├── media/                       # Media files (gitignored)
-│   └── dashboard-snapshots/     # HTML dashboards (public)
-│
+├── media/dashboard-snapshots/   # HTML dashboards (public)
 └── docs/                        # Documentation
-    ├── garmin-workout-creation-guide.md
-    ├── garmin-api-quick-reference.md
-    └── ARCHITECTURE.md
 ```
+
+---
 
 ## Requirements
 
-- Python 3.8+
-- Garmin Connect account
-- Chrome/Firefox (for cookie import)
+- **Python 3.8+**
+- **Garmin Connect account**
+- **Chrome or Firefox** (for cookie import)
+
+---
 
 ## How It Works
 
-1. **Authentication**: Import Garmin Connect session cookies (valid ~2 weeks)
-2. **Sync**: Fetch activities from Garmin Connect API
-3. **Storage**: Save to `tracking/unified-cache.json` (single source of truth)
-4. **Dashboard**: Visualize data with Streamlit (optional)
-
-## Data Flow
+1. **Authentication** — Import Garmin Connect session cookies (valid ~2 weeks)
+2. **Sync** — Fetch activities from Garmin Connect API
+3. **Storage** — Save to `tracking/unified-cache.json` (single source of truth)
+4. **Dashboard** — Visualize with Streamlit (optional)
 
 ```
 Garmin Connect API
-    ↓
+        ↓
 incremental-sync.py (merge new activities)
-    ↓
-tracking/unified-cache.json (single source of truth)
-    ↓
+        ↓
+tracking/unified-cache.json
+        ↓
 Dashboard (visualization)
 ```
 
-## Advanced Usage
-
-### Create Structured Workouts
-
-Build and schedule workouts to your Garmin watch:
-
-```bash
-# Preview workouts for week 3
-python scripts/create-garmin-workouts.py --week 3 --dry-run
-
-# Create and schedule to Garmin Connect
-python scripts/create-garmin-workouts.py --week 3
-```
-
-See [docs/garmin-workout-creation-guide.md](docs/garmin-workout-creation-guide.md) for customization.
-
-### Generate Training Reports
-
-```bash
-# Weekly summary (auto-detects current week)
-python scripts/weekly-summary.py
-
-# Analyze consistency patterns
-python scripts/consistency-guardian.py
-
-# Validate data integrity
-python scripts/verify-data-integrity.py
-```
-
-### Parse FIT Files
-
-Deep-dive into per-second metrics:
-
-```bash
-# Text summary
-python scripts/parse-fit.py tracking/fit_files/12345.fit
-
-# JSON output
-python scripts/parse-fit.py path/to/file.fit --json
-
-# Markdown format
-python scripts/parse-fit.py path/to/file.fit --markdown
-```
-
-### Schedule Automatic Syncs
-
-**Linux/Mac (cron):**
-```bash
-# Add to crontab (runs daily at 8 PM)
-0 20 * * * cd /path/to/running && python scripts/daily-sync.py
-```
-
-**Windows (Task Scheduler):**
-```powershell
-# Create scheduled task
-$action = New-ScheduledTaskAction -Execute 'python' -Argument 'scripts/daily-sync.py' -WorkingDirectory 'C:\path\to\running'
-$trigger = New-ScheduledTaskTrigger -Daily -At 8PM
-Register-ScheduledTask -TaskName "GarminSync" -Action $action -Trigger $trigger
-```
+---
 
 ## Roadmap
 
@@ -270,6 +226,14 @@ Register-ScheduledTask -TaskName "GarminSync" -Action $action -Trigger $trigger
 - [ ] Mobile-friendly dashboard
 - [ ] Export to Excel/CSV
 
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
 ## License
 
-MIT License - Free to use and modify for your own training tracking.
+MIT License — Free to use and modify. See [LICENSE](LICENSE).

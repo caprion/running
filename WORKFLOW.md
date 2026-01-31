@@ -74,7 +74,7 @@ After your run:
 Pull the latest data from Garmin Connect:
 ```bash
 cd c:\Learn\running
-python scripts/sync-garmin.py
+python scripts/incremental-sync.py --days 7
 ```
 
 This fetches:
@@ -433,10 +433,10 @@ Claude creates:
 ### Sync Latest Data
 ```powershell
 # Sync last 7 days (default)
-python scripts/sync-garmin.py
+python scripts/daily-sync.py
 
 # Sync custom number of days
-python scripts/sync-garmin.py 14
+python scripts/incremental-sync.py --days 14
 ```
 
 ### Generate Weekly Summary
@@ -472,7 +472,7 @@ See `scripts/README.md` for troubleshooting and setup details.
 ## 9. Quick Commands
 
 ### Garmin Sync
-- "python scripts/sync-garmin.py"
+- "python scripts/incremental-sync.py --days 7"
 - "python scripts/weekly-summary.py"
 
 ### Workout Analysis
@@ -598,7 +598,7 @@ The goal is **sustainable progress tracking** that helps you become a better run
 - [x] README.md (dashboard) created
 - [x] Week 1 log ready
 - [x] Historical Chennai season documented
-- [x] Garmin sync scripts setup (sync-garmin.py, weekly-summary.py)
+- [x] Garmin sync scripts setup (incremental-sync.py, weekly-summary.py)
 - [x] OAuth session authenticated
 - [ ] Complete first workout and screenshot it
 - [ ] Run first Garmin sync and weekly summary

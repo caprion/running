@@ -69,7 +69,7 @@ pip install streamlit pandas plotly
 streamlit run dashboard/app.py
 ```
 
-Open browser to `http://localhost:8501` to view:
+Open browser to `http://localhost:8501` (or `http://localhost:8502` if 8501 is in use—use `--server.port 8502` to specify) to view:
 - Activity list with filters
 - Monthly volume analysis
 - Pace progression charts

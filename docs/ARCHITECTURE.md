@@ -5,8 +5,8 @@ This document explains how data flows through the system and how the main compon
 ## Components
 
 - Scripts (`scripts/`)
-  - Sync data from Garmin/Strava to local JSON caches.
-  - Primary entry points: `sync-garmin.py`, `sync-strava.py`, `sync-all.py`.
+  - Sync data from Garmin Connect to local JSON caches.
+  - Primary entry points: `incremental-sync.py`, `daily-sync.py`.
 - Tracking (`tracking/`)
   - Cache files written by scripts: `garmin-cache.json`, `strava-cache.json`.
   - Weekly summary markdowns for human review.
@@ -20,8 +20,8 @@ This document explains how data flows through the system and how the main compon
 ## Data Flow
 
 1. Sync
-   - Run `python scripts/sync-garmin.py [days]` and/or `python scripts/sync-strava.py`.
-   - Outputs: `tracking/garmin-cache.json`, `tracking/strava-cache.json`.
+   - Run `python scripts/incremental-sync.py --days N` or `python scripts/daily-sync.py`.
+   - Outputs: `tracking/unified-cache.json` (primary), `tracking/garmin-cache.json`.
 
 2. Load & Merge
    - `dashboard/utils/data_loader.py`:
@@ -62,5 +62,5 @@ This document explains how data flows through the system and how the main compon
 
 - Cache errors or datetime pickling: clear Streamlit cache (`CLEAR-CACHE.bat`).
 - PyArrow missing: expected on ARM Windows — use markdown tables.
-- See `KNOWN-ISSUES.md` and `FINAL-FIX-PYARROW.md` for prior fixes and patterns.
+- See `docs/archived/KNOWN-ISSUES.md` and `docs/archived/FINAL-FIX-PYARROW.md` for prior fixes and patterns.
 

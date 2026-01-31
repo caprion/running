@@ -1,38 +1,32 @@
 # Documentation Index
 
-This repository already has rich documentation. This index groups what exists so you can find the right guide fast.
+This repository has rich documentation. This index groups what exists so you can find the right guide fast.
 
 ## Getting Started
 
 - `QUICK-START.md` — One-page quick start for syncing and running the dashboard
-- `README.md` — Current season dashboard status and links
+- `README.md` — Project overview and links
 - `dashboard/README.md` — Launching and using the Streamlit dashboard
 
 ## Workflows
 
 - `WORKFLOW.md` — Daily, weekly check-in, and gait analysis workflows
-- `SESSION-SUMMARY.md` — Consolidated session summary and pointers
+- `docs/archived/SESSION-SUMMARY.md` — Consolidated session summary (archived)
 
 ## Data Sync & Integrations
 
 - `scripts/README.md` — Garmin sync setup and usage
-- `STRAVA-SETUP.md` — Strava integration notes
 - Scripts:
-  - `scripts/sync-garmin.py`
-  - `scripts/sync-strava.py`
-  - `scripts/sync-all.py`
-  - `scripts/weekly-summary.py`
-  - `scripts/import-session.py`
+  - `scripts/incremental-sync.py` — Primary sync (use this)
+  - `scripts/daily-sync.py` — Convenience wrapper
+  - `scripts/weekly-summary.py` — Training reports
+  - `scripts/import-session.py` — Auth setup
+- Strava: `docs/archived/STRAVA-SETUP.md` (archived, phased out)
 
 ## Dashboard
 
-- `DASHBOARD-SUMMARY.md` — Dashboard features and usage
-- `KNOWN-ISSUES.md` — Active issues and tracker
-- Fix logs:
-  - `FIXED-PYARROW-ISSUE.md`
-  - `FINAL-FIX-PYARROW.md`
-  - `FIXED-CACHE-ISSUE.md`
-  - `BUGFIX-2026-01-09.md`
+- `dashboard/README.md` — Dashboard features and usage
+- Archived fix logs: `docs/archived/` (DASHBOARD-SUMMARY, KNOWN-ISSUES, BUGFIX-*, FIXED-*)
 
 ## Architecture & Data
 
@@ -43,7 +37,6 @@ This repository already has rich documentation. This index groups what exists so
 
 ## Agents (Multi-Agent Collaboration)
 
-- `AGENTS.md` — Top-level guide, safety rails, conventions
 - `docs/agents/ONBOARDING.md` — 1-page quick start for agents
 - `docs/agents/WAY-OF-WORKING.md` — Preambles, plans, approvals, memory
 - `docs/agents/ROLES.md` — Responsibilities/allowed changes per role
@@ -57,7 +50,7 @@ This repository already has rich documentation. This index groups what exists so
 
 ## Analysis & Strategy
 
-- `analysis/floor-violation-patterns.md` — Historical consistency/risk analysis
+- `analysis/floor-violation-patterns.md` — Historical consistency/risk analysis (if present)
 - `CLAUDE.md` — Project context, goals, weekly plan anchors
 
 ## Training & Seasons
@@ -69,21 +62,18 @@ This repository already has rich documentation. This index groups what exists so
 ## Tracking & Reports
 
 - Weekly summaries: `tracking/weekly-summary-YYYY-MM-DD.md`
-- Caches: `tracking/garmin-cache.json`, `tracking/strava-cache.json`
+- Caches: `tracking/unified-cache.json` (primary), `tracking/garmin-cache.json`
 
 ## Resources & Templates
 
 - Arm swing drills: `resources/arm-swing-drills-guide.md`
+- Garmin watch settings: `resources/garmin-watch-settings-guide.md`
 - Training plan (Excel): `resources/20_Week_Training_Plan.xlsx`
 - Templates:
   - `templates/weekly-log-template.md`
   - `templates/daily-run-log-template.md`
 
-## Utilities
+## Notes
 
-- Launchers: `RUN-DASHBOARD.bat`, `CLEAR-CACHE.bat`
-- Status: `UPDATES.md`, `sync_output.txt`
-
-Notes
 - Many documents contain repeated high-level context for convenience. Prefer linking instead of duplicating content when extending docs.
 - All additions here are documentation-only and do not affect runtime.

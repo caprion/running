@@ -19,6 +19,7 @@ seasons/
 !seasons/.gitkeep
 media/
 !media/.gitkeep
+!media/dashboard-snapshots/
 analysis/
 !analysis/.gitkeep
 

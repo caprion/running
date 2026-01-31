@@ -47,7 +47,7 @@ try:
     df, weekly = load_data()
 
     if df.empty:
-        st.error("No running activities found. Run `python scripts/sync-garmin.py` to sync data.")
+        st.error("No running activities found. Run `python scripts/incremental-sync.py --days 90` to sync data.")
         st.stop()
 
     # Filters

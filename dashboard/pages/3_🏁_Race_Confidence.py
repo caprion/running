@@ -43,7 +43,7 @@ try:
     df, activities = load_data()
 
     if df.empty:
-        st.error("No running activities found. Run `python scripts/sync-garmin.py` to sync data.")
+        st.error("No running activities found. Run `python scripts/incremental-sync.py --days 90` to sync data.")
         st.stop()
 
     # Sidebar - Race configuration
@@ -249,7 +249,7 @@ try:
         st.plotly_chart(fig_hr, use_container_width=True)
     else:
         if total_long_runs > 0 and total_long_runs_with_splits == 0:
-            st.info("Long runs found but without per-km HR splits in this window. If these are Strava-only, backfill Garmin: `python scripts/sync-garmin.py 90`.")
+            st.info("Long runs found but without per-km HR splits in this window. If these are Strava-only, backfill Garmin: `python scripts/incremental-sync.py --days 90`.")
         else:
             st.info(f"No long runs (≥15km) with HR data found in the last {analysis_weeks} weeks.")
 

@@ -460,19 +460,64 @@ def main():
         'recovery': ('Recovery', create_recovery_page),
     }
     
+    # Page wrapper template (matches Streamlit dashboard style)
+    PAGE_HEADER = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title} - Running Analytics</title>
+    <style>
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f0f2f6; }}
+        .header {{ background: white; padding: 1rem 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }}
+        .header h1 {{ margin: 0; font-size: 1.5rem; color: #31333f; }}
+        .header a {{ color: #4CAF50; text-decoration: none; font-weight: 500; }}
+        .header a:hover {{ text-decoration: underline; }}
+        .nav {{ display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }}
+        .badge {{ background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }}
+        .content {{ max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; }}
+        .chart-container {{ background: white; border-radius: 8px; padding: 1rem; margin-top: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏃 Running Analytics Dashboard</h1>
+        <nav class="nav">
+            <a href="index.html">← All Dashboards</a>
+            <span class="badge">Sample Data</span>
+        </nav>
+    </div>
+    <div class="content">
+        <div class="chart-container">
+"""
+    PAGE_FOOTER = """
+        </div>
+    </div>
+</body>
+</html>
+"""
+    
     generated_files = []
     
     for filename, (title, generator_func) in dashboards.items():
         try:
             fig = generator_func()
             
-            # Save as standalone HTML
-            output_file = output_dir / f"{filename}.html"
-            fig.write_html(
-                str(output_file),
+            # Get chart HTML (includes Plotly div + script)
+            chart_html = fig.to_html(
+                full_html=False,
                 include_plotlyjs='cdn',
                 config={'displayModeBar': True, 'displaylogo': False}
             )
+            
+            # Wrap in page template
+            full_html = PAGE_HEADER.format(title=title) + chart_html + PAGE_FOOTER
+            
+            output_file = output_dir / f"{filename}.html"
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(full_html)
             
             generated_files.append((filename, title, output_file))
             print(f"  ✓ {output_file.name}")

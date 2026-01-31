@@ -46,7 +46,7 @@ last_sync = get_last_sync_time()
 if last_sync:
     st.markdown(f'<div class="sub-header">Last synced: {last_sync}</div>', unsafe_allow_html=True)
 else:
-    st.warning("⚠️ No data found. Run: `python scripts/sync-garmin.py`")
+    st.warning("⚠️ No data found. Run: `python scripts/incremental-sync.py --days 90`")
 
 st.markdown("---")
 

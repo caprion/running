@@ -95,7 +95,7 @@ try:
     weekly = get_weekly_summary(df)
     
     if df.empty:
-        st.error("No running activities found. Run `python scripts/sync-garmin.py` to sync data.")
+        st.error("No running activities found. Run `python scripts/incremental-sync.py --days 90` to sync data.")
         st.stop()
 
     # Filter to campaign period
@@ -369,7 +369,7 @@ try:
 
 except Exception as e:
     st.error(f"Error loading data: {e}")
-    st.info("Try running `python scripts/sync-garmin.py` to refresh data cache.")
+    st.info("Try running `python scripts/incremental-sync.py --days 7` to refresh data cache.")
     
     with st.expander("Error details"):
         import traceback
