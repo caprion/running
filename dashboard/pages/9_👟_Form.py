@@ -277,177 +277,271 @@ try:
     st.plotly_chart(fig_cadence, use_container_width=True)
 
     # ============================================
-    # CADENCE VS PACE RELATIONSHIP (NEW)
+    # CADENCE BY PACE BRACKET (Simplified & Actionable)
     # ============================================
     st.markdown("---")
-    st.subheader("🔄 Cadence-Pace Relationship")
+    st.subheader("🎯 Cadence by Pace Bracket")
+    st.caption("Are you hitting target cadence at each pace? Compares last 5 vs previous 5 laps per bracket.")
     
-    # Load pre-calculated analysis
-    cadence_analysis = get_cadence_pace_analysis()
+    # Define pace brackets and targets
+    pace_brackets = {
+        'Fast': {'min': 0, 'max': 6.0, 'target': (162, 175), 'emoji': '⚡'},
+        'Moderate': {'min': 6.0, 'max': 6.5, 'target': (158, 168), 'emoji': '🏃'},
+        'Easy': {'min': 6.5, 'max': 7.0, 'target': (155, 165), 'emoji': '🚶'},
+        'Recovery': {'min': 7.0, 'max': 10.0, 'target': (150, 160), 'emoji': '💤'},
+    }
     
-    if cadence_analysis and cadence_analysis.get('lap_data'):
-        lap_data = cadence_analysis['lap_data']
-        regression = cadence_analysis.get('regression', {})
-        bracket_stats = cadence_analysis.get('bracket_stats', {})
+    # Extract lap data with dates for trend analysis
+    lap_data_with_dates = []
+    for act in activities:
+        if act.get('type') != 'running':
+            continue
         
-        # Display key metrics
-        col1, col2, col3 = st.columns(3)
+        act_date = act.get('date', '')[:10]
+        splits = act.get('splits', {})
+        laps = splits.get('lapDTOs', []) if isinstance(splits, dict) else []
+        
+        for lap in laps:
+            cadence = lap.get('averageRunCadence')
+            pace_ms = lap.get('averageSpeed', 0)
+            distance = lap.get('distance', 0)
+            
+            if cadence and pace_ms > 0 and distance >= 500:
+                pace_min_km = (1000 / pace_ms) / 60
+                lap_data_with_dates.append({
+                    'date': act_date,
+                    'cadence': cadence,
+                    'pace_min_km': pace_min_km
+                })
+    
+    if lap_data_with_dates:
+        # Sort by date descending
+        lap_data_with_dates.sort(key=lambda x: x['date'], reverse=True)
+        
+        # Analyze each bracket
+        bracket_analysis = {}
+        
+        for bracket_name, bracket_config in pace_brackets.items():
+            # Filter laps in this bracket
+            bracket_laps = [
+                lap for lap in lap_data_with_dates
+                if bracket_config['min'] <= lap['pace_min_km'] < bracket_config['max']
+            ]
+            
+            if len(bracket_laps) >= 3:
+                # Recent 5 laps vs previous 5 laps
+                recent_laps = bracket_laps[:5]
+                previous_laps = bracket_laps[5:10] if len(bracket_laps) >= 10 else bracket_laps[5:]
+                
+                recent_avg = sum(l['cadence'] for l in recent_laps) / len(recent_laps)
+                previous_avg = sum(l['cadence'] for l in previous_laps) / len(previous_laps) if previous_laps else recent_avg
+                
+                trend = recent_avg - previous_avg
+                target_min, target_max = bracket_config['target']
+                
+                # Status
+                if target_min <= recent_avg <= target_max:
+                    status = '✅ Good'
+                elif recent_avg < target_min:
+                    status = '⚠️ Low'
+                else:
+                    status = '🔵 High'
+                
+                # Trend indicator
+                if trend > 2:
+                    trend_icon = '📈'
+                    trend_text = f'+{trend:.0f}'
+                elif trend < -2:
+                    trend_icon = '📉'
+                    trend_text = f'{trend:.0f}'
+                else:
+                    trend_icon = '➡️'
+                    trend_text = '~'
+                
+                bracket_analysis[bracket_name] = {
+                    'recent_avg': recent_avg,
+                    'previous_avg': previous_avg,
+                    'trend': trend,
+                    'trend_icon': trend_icon,
+                    'trend_text': trend_text,
+                    'status': status,
+                    'target': bracket_config['target'],
+                    'emoji': bracket_config['emoji'],
+                    'lap_count': len(recent_laps),
+                    'total_laps': len(bracket_laps)
+                }
+        
+        # Display as table
+        if bracket_analysis:
+            st.markdown("| Pace | Recent (5) | Previous (5) | Trend | Target | Status |")
+            st.markdown("|------|------------|--------------|-------|--------|--------|")
+            
+            for bracket_name, data in bracket_analysis.items():
+                prev_str = f"{data['previous_avg']:.0f}" if data['previous_avg'] != data['recent_avg'] else "—"
+                st.markdown(
+                    f"| {data['emoji']} **{bracket_name}** | "
+                    f"{data['recent_avg']:.0f} spm | "
+                    f"{prev_str} spm | "
+                    f"{data['trend_icon']} {data['trend_text']} | "
+                    f"{data['target'][0]}-{data['target'][1]} | "
+                    f"{data['status']} |"
+                )
+            
+            # Summary insight
+            improving_brackets = [name for name, data in bracket_analysis.items() if data['trend'] > 2]
+            declining_brackets = [name for name, data in bracket_analysis.items() if data['trend'] < -2]
+            low_brackets = [name for name, data in bracket_analysis.items() if '⚠️' in data['status']]
+            
+            st.markdown("")
+            if improving_brackets:
+                st.success(f"📈 **Improving:** {', '.join(improving_brackets)} — cadence trending up!")
+            if declining_brackets:
+                st.warning(f"📉 **Watch:** {', '.join(declining_brackets)} — cadence dropping")
+            if low_brackets and not improving_brackets:
+                st.info(f"💡 **Tip:** Focus on maintaining {low_brackets[0]} cadence above {pace_brackets[low_brackets[0]]['target'][0]} spm")
+            elif not improving_brackets and not declining_brackets and not low_brackets:
+                st.success("✅ Cadence looking stable across all pace brackets!")
+            
+            # Show how many laps analyzed
+            total_laps = sum(data['total_laps'] for data in bracket_analysis.values())
+            st.caption(f"Based on {total_laps} laps from recent runs")
+        else:
+            st.info("Not enough lap data yet. Need at least 3 laps per pace bracket.")
+    else:
+        st.warning("No lap-level cadence data available.")
+    
+    # ============================================
+    # CADENCE PROGRESS TABLE (Pace-Normalized)
+    # ============================================
+    st.markdown("---")
+    st.subheader("📋 Cadence Progress (Pace-Normalized)")
+    st.caption("Compare cadence at similar paces to track real improvement vs just running faster")
+    
+    # Build activity data with proper metrics
+    progress_data = []
+    for act in activities:
+        if act.get('type') != 'running':
+            continue
+        
+        date = act.get('date', '')[:10]
+        if date < '2026-01':  # Focus on recent season
+            continue
+            
+        name = act.get('name', 'Unknown')
+        dist_km = act.get('distance_km', 0)
+        dur_sec = act.get('duration_seconds', 0)
+        cadence = act.get('avg_cadence', 0)
+        
+        if not cadence or not dur_sec or dist_km < 3:
+            continue
+        
+        # Calculate pace
+        pace_sec_km = dur_sec / dist_km if dist_km > 0 else 0
+        pace_min = int(pace_sec_km // 60)
+        pace_s = int(pace_sec_km % 60)
+        pace_str = f"{pace_min}:{pace_s:02d}"
+        
+        # Get stride from splits
+        splits = act.get('splits', {}).get('lapDTOs', []) if isinstance(act.get('splits'), dict) else []
+        if splits:
+            strides = [s.get('strideLength', 0) for s in splits if s.get('strideLength')]
+            stride_cm = sum(strides) / len(strides) if strides else 0
+        else:
+            stride_cm = 0
+        
+        progress_data.append({
+            'date': date,
+            'name': name[:30],
+            'distance_km': dist_km,
+            'pace_sec': pace_sec_km,
+            'pace': pace_str,
+            'cadence': cadence,
+            'stride_cm': stride_cm
+        })
+    
+    if progress_data:
+        progress_df = pd.DataFrame(progress_data).sort_values('date', ascending=False)
+        
+        # Calculate pace bracket for each run
+        def get_pace_bracket(pace_sec):
+            pace_min = pace_sec / 60
+            if pace_min < 6.0:
+                return "Fast (<6:00)"
+            elif pace_min < 6.5:
+                return "Moderate (6:00-6:30)"
+            elif pace_min < 7.0:
+                return "Easy (6:30-7:00)"
+            else:
+                return "Recovery (>7:00)"
+        
+        progress_df['pace_bracket'] = progress_df['pace_sec'].apply(get_pace_bracket)
+        
+        # Find the most recent run for comparison
+        most_recent = progress_df.iloc[0]
+        recent_bracket = most_recent['pace_bracket']
+        
+        # Find other runs in similar pace bracket
+        similar_runs = progress_df[progress_df['pace_bracket'] == recent_bracket].iloc[1:]  # Exclude most recent
+        
+        # Display comparison
+        col1, col2 = st.columns([1, 2])
         
         with col1:
-            correlation = regression.get('correlation', 0)
-            corr_status = "🟢" if abs(correlation) > 0.7 else "🟡"
-            st.metric(
-                "Correlation",
-                f"{correlation:.2f}",
-                help="How strongly cadence relates to pace. -0.7 to -1.0 is normal (cadence increases as you run faster)"
-            )
+            st.markdown("##### 🎯 Latest Run")
+            st.metric("Date", most_recent['date'])
+            st.metric("Pace", most_recent['pace'])
+            st.metric("Cadence", f"{most_recent['cadence']:.0f} spm")
+            if most_recent['stride_cm'] > 0:
+                st.metric("Stride", f"{most_recent['stride_cm']:.0f} cm")
         
         with col2:
-            slope = regression.get('slope', 0)
-            st.metric(
-                "Cadence Change",
-                f"{slope:.1f} spm/min",
-                help="How much your cadence changes per 1 min/km pace change"
-            )
-        
-        with col3:
-            r_squared = regression.get('r_squared', 0)
-            st.metric(
-                "R² (Consistency)",
-                f"{r_squared:.2f}",
-                help="How consistent your cadence-pace relationship is. Higher = more predictable form."
-            )
-        
-        # Main scatter plot with trendline
-        import pandas as pd
-        lap_df_analysis = pd.DataFrame(lap_data)
-        
-        fig_pace_cadence = go.Figure()
-        
-        # Scatter plot of all laps
-        fig_pace_cadence.add_trace(go.Scatter(
-            x=lap_df_analysis['pace_min_km'],
-            y=lap_df_analysis['cadence'],
-            mode='markers',
-            name='Laps',
-            marker=dict(
-                size=8,
-                color=lap_df_analysis['pace_min_km'],
-                colorscale='RdYlGn_r',
-                opacity=0.6,
-                showscale=True,
-                colorbar=dict(title="Pace (min/km)")
-            ),
-            hovertemplate='Pace: %{x:.1f} min/km<br>Cadence: %{y:.0f} spm<extra></extra>'
-        ))
-        
-        # Trendline
-        slope = regression.get('slope', 0)
-        intercept = regression.get('intercept', 0)
-        x_range = [lap_df_analysis['pace_min_km'].min(), lap_df_analysis['pace_min_km'].max()]
-        y_trend = [slope * x + intercept for x in x_range]
-        
-        fig_pace_cadence.add_trace(go.Scatter(
-            x=x_range,
-            y=y_trend,
-            mode='lines',
-            name=f'Trend: {slope:.1f}×pace + {intercept:.0f}',
-            line=dict(color='#e74c3c', width=3, dash='solid')
-        ))
-        
-        # Target zone overlay (optimal cadence ranges by pace)
-        # Green zone: recommended cadence for each pace
-        target_zones = [
-            {'pace_min': 4.5, 'pace_max': 5.0, 'cad_min': 170, 'cad_max': 185, 'label': 'Fast'},
-            {'pace_min': 5.0, 'pace_max': 5.5, 'cad_min': 165, 'cad_max': 180, 'label': 'Tempo'},
-            {'pace_min': 5.5, 'pace_max': 6.0, 'cad_min': 162, 'cad_max': 175, 'label': 'Moderate'},
-            {'pace_min': 6.0, 'pace_max': 6.5, 'cad_min': 158, 'cad_max': 170, 'label': 'Easy'},
-            {'pace_min': 6.5, 'pace_max': 7.0, 'cad_min': 155, 'cad_max': 168, 'label': 'Recovery'},
-            {'pace_min': 7.0, 'pace_max': 8.0, 'cad_min': 152, 'cad_max': 165, 'label': 'Very Easy'},
-        ]
-        
-        for zone in target_zones:
-            fig_pace_cadence.add_shape(
-                type="rect",
-                x0=zone['pace_min'], x1=zone['pace_max'],
-                y0=zone['cad_min'], y1=zone['cad_max'],
-                fillcolor="rgba(46, 204, 113, 0.1)",
-                line=dict(color="rgba(46, 204, 113, 0.3)", width=1),
-            )
-        
-        fig_pace_cadence.update_layout(
-            title="Cadence vs Pace (with optimal zones)",
-            xaxis_title="Pace (min/km)",
-            yaxis_title="Cadence (spm)",
-            xaxis=dict(autorange='reversed'),  # Faster pace on right
-            height=450,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02)
-        )
-        
-        st.plotly_chart(fig_pace_cadence, use_container_width=True)
-        
-        # Pace bracket comparison table
-        st.markdown("#### 📊 Cadence by Pace Bracket")
-        
-        # Define bracket labels
-        bracket_labels = {
-            '1_fast': ('⚡ Fast (<5:00)', '#27ae60'),
-            '2_tempo': ('🔥 Tempo (5:00-5:30)', '#2ecc71'),
-            '3_moderate': ('🏃 Moderate (5:30-6:00)', '#f1c40f'),
-            '4_easy': ('🚶 Easy (6:00-6:30)', '#e67e22'),
-            '5_recovery': ('💤 Recovery (6:30-7:00)', '#e74c3c'),
-            '6_very_easy': ('🐢 Very Easy (>7:00)', '#c0392b')
-        }
-        
-        # Target cadence by bracket
-        target_cadence = {
-            '1_fast': (170, 185),
-            '2_tempo': (165, 180),
-            '3_moderate': (162, 175),
-            '4_easy': (158, 170),
-            '5_recovery': (155, 168),
-            '6_very_easy': (152, 165)
-        }
-        
-        # Create comparison table
-        cols = st.columns(len(bracket_stats))
-        for i, (bracket, stats) in enumerate(sorted(bracket_stats.items())):
-            if bracket in bracket_labels:
-                label, color = bracket_labels[bracket]
-                target = target_cadence.get(bracket, (150, 175))
-                actual = stats['avg_cadence']
+            st.markdown(f"##### 📊 Comparison at Similar Pace ({recent_bracket})")
+            
+            if len(similar_runs) > 0:
+                avg_cad = similar_runs['cadence'].mean()
+                avg_stride = similar_runs[similar_runs['stride_cm'] > 0]['stride_cm'].mean() if len(similar_runs[similar_runs['stride_cm'] > 0]) > 0 else 0
                 
-                # Determine status
-                if target[0] <= actual <= target[1]:
-                    status = "✅"
-                elif actual < target[0]:
-                    status = "⚠️ Low"
+                cad_diff = most_recent['cadence'] - avg_cad
+                stride_diff = most_recent['stride_cm'] - avg_stride if avg_stride > 0 and most_recent['stride_cm'] > 0 else 0
+                
+                # Status indicators
+                if cad_diff > 2:
+                    cad_status = "✅ Improved"
+                elif cad_diff < -2:
+                    cad_status = "⚠️ Lower"
                 else:
-                    status = "🟡 High"
+                    cad_status = "➡️ Similar"
                 
-                with cols[i]:
-                    st.markdown(f"**{label.split(' ')[0]}**")
-                    st.metric(
-                        label.split(' ', 1)[1] if len(label.split(' ', 1)) > 1 else bracket,
-                        f"{actual:.0f} spm",
-                        delta=f"{status}" if status != "✅" else None,
-                        delta_color="off"
-                    )
-                    st.caption(f"Target: {target[0]}-{target[1]} ({stats['lap_count']} laps)")
+                if stride_diff > 2:
+                    stride_status = "✅ Longer"
+                elif stride_diff < -2:
+                    stride_status = "⚠️ Shorter"
+                else:
+                    stride_status = "➡️ Similar"
+                
+                st.markdown(f"""
+                | Metric | Latest | Avg ({len(similar_runs)} runs) | Diff | Status |
+                |--------|--------|------|------|--------|
+                | Cadence | {most_recent['cadence']:.0f} spm | {avg_cad:.0f} spm | {cad_diff:+.0f} | {cad_status} |
+                | Stride | {most_recent['stride_cm']:.0f} cm | {avg_stride:.0f} cm | {stride_diff:+.0f} | {stride_status} |
+                """)
+                
+                st.caption("ℹ️ Comparing runs at similar pace isolates real form improvement from speed effects")
+            else:
+                st.info(f"Not enough runs at {recent_bracket} pace for comparison yet.")
         
-        # Insight box
-        slope = regression.get('slope', 0)
-        if abs(slope) > 10:
-            insight = "⚠️ **High cadence variation** - Your cadence changes significantly with pace. Focus on maintaining higher cadence at easy paces."
-        elif abs(slope) < 5:
-            insight = "✅ **Consistent cadence** - Your cadence stays relatively stable across paces. Good form efficiency!"
-        else:
-            insight = "🟡 **Normal variation** - Your cadence-pace relationship is typical. Room for improvement at easy paces."
-        
-        st.info(insight)
-        
-    else:
-        st.warning("Cadence-pace analysis not available. Run `python scripts/incremental-sync.py` to calculate.")
+        # Detailed table
+        with st.expander("📋 Full Run Comparison Table", expanded=False):
+            st.markdown("Recent runs with cadence and stride data:")
+            
+            # Format as markdown table instead of st.dataframe (avoids pyarrow dependency)
+            display_df = progress_df.head(15)[['date', 'name', 'distance_km', 'pace', 'cadence', 'stride_cm', 'pace_bracket']].copy()
+            
+            st.markdown("| Date | Run | Dist | Pace | Cadence | Stride | Bracket |")
+            st.markdown("|------|-----|------|------|---------|--------|---------|")
+            for _, row in display_df.iterrows():
+                stride_str = f"{row['stride_cm']:.0f} cm" if row['stride_cm'] > 0 else "N/A"
+                st.markdown(f"| {row['date']} | {row['name'][:25]} | {row['distance_km']:.1f}km | {row['pace']} | {row['cadence']:.0f} spm | {stride_str} | {row['pace_bracket'][:8]} |")
     
     # ============================================
     # CADENCE vs STRIDE SCATTER
