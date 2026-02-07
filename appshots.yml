@@ -1,0 +1,46 @@
+# appshots config for running analytics dashboard
+# Usage: cd media/dashboard-snapshots && python -m http.server 9000
+#        then from project root: appshots
+
+base_url: "http://127.0.0.1:9000"
+output_dir: "./screenshots"
+viewport: { width: 1280, height: 800 }
+wait_after_load: 1500
+dark_mode: false
+
+shots:
+  - name: "01-overview"
+    description: "Overview — 12-week volume trends and key metrics"
+    actions:
+      - navigate: "/overview.html"
+      - wait: 1000
+
+  - name: "02-consistency"
+    description: "Consistency Guardian — weekly status heatmap"
+    actions:
+      - navigate: "/consistency.html"
+      - wait: 1000
+
+  - name: "03-training-load"
+    description: "Training Load — sleep analysis and HR zones"
+    actions:
+      - navigate: "/training-load.html"
+      - wait: 1000
+
+  - name: "04-race-confidence"
+    description: "Race Confidence — pace sustainability analysis"
+    actions:
+      - navigate: "/race-confidence.html"
+      - wait: 1000
+
+  - name: "05-form"
+    description: "Running Form — cadence distribution and trends"
+    actions:
+      - navigate: "/form.html"
+      - wait: 1000
+
+  - name: "06-recovery"
+    description: "Recovery — sleep stages and resting HR"
+    actions:
+      - navigate: "/recovery.html"
+      - wait: 1000
