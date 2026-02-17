@@ -26,6 +26,14 @@ This is a long-term running training and performance tracking system for continu
 - **Full plan:** `seasons/2026-spring-hm-sub2/plan.md`
 - **Excel details:** `resources/20_Week_Training_Plan.xlsx`
 - **Weekly logs:** `seasons/2026-spring-hm-sub2/weekly-logs/`
+- **Training journal:** `seasons/2026-spring-hm-sub2/training-journal.md` (AI-generated, updated biweekly)
+
+## AI Enrichment
+- **Metrics:** `python -m scripts.ai.compute --days 60` computes per-run and weekly metrics
+- **Insights file:** `tracking/ai-insights.json` (pace drift, HR drift, elevation, plan compliance, risk flags)
+- **Sync with enrichment:** `python scripts/incremental-sync.py --days 7 --enrich`
+- **Narrative analysis:** Ask Copilot "analyze my latest runs" — reads ai-insights.json + unified-cache
+- **Training journal:** Copilot appends biweekly entries to training-journal.md
 
 ## Key Principles
 1. **Consistency > Volume** - Better to do 15-20km/week floor than skip entirely

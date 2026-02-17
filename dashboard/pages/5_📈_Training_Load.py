@@ -27,7 +27,7 @@ from utils.metrics import FLOOR_THRESHOLD, YELLOW_THRESHOLD
 # Page config
 st.set_page_config(page_title="Training Load", page_icon="📈", layout="wide")
 
-st.title("📈 Training Load & Recovery")
+st.title("Training Load & Recovery")
 st.markdown("Monitor training stress, recovery metrics, and physiological adaptation")
 
 # Threshold constants (adjustable)
@@ -81,7 +81,7 @@ try:
         st.stop()
 
     # Show dynamic baselines in sidebar
-    st.sidebar.markdown("### 📐 Current Baselines")
+    st.sidebar.markdown("### Current Baselines")
     st.sidebar.markdown(f"**Max HR:** {MAX_HR} bpm")
     st.sidebar.markdown(f"**RHR Baseline:** {BASELINE_RHR} bpm")
     st.sidebar.caption("_Auto-calculated from your data. New max HR efforts will update zones automatically._")
@@ -89,7 +89,7 @@ try:
     # ============================================
     # CURRENT STATUS CARDS
     # ============================================
-    st.subheader("📊 Current Training Status")
+    st.subheader("Current Training Status")
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -152,7 +152,7 @@ try:
     # RECOVERY METRICS (Sleep & RHR)
     # ============================================
     st.markdown("---")
-    st.subheader("😴 Recovery Metrics")
+    st.subheader("Recovery Metrics")
     
     if sleep_data:
         # Process sleep data
@@ -260,7 +260,7 @@ try:
     # TRAINING LOAD TREND
     # ============================================
     st.markdown("---")
-    st.subheader("🏃 Training Load Trend")
+    st.subheader("Training Load Trend")
     
     # Calculate weekly load proxy (distance × avg HR factor)
     # This is an approximation since Garmin doesn't provide historical load
@@ -366,111 +366,77 @@ try:
     # HR ZONES DISTRIBUTION (Recent Activities)
     # ============================================
     st.markdown("---")
-    st.subheader("❤️ Heart Rate Analysis")
+    st.subheader("Heart Rate Analysis")
     
     # Get recent activities with HR data
     recent_activities = df.tail(20).copy()
     recent_with_hr = recent_activities[recent_activities['avg_hr'].notna()].copy()
     
     if not recent_with_hr.empty:
-        col1, col2 = st.columns(2)
-        
         # Calculate dynamic zone thresholds based on MAX_HR
         z1_max = int(MAX_HR * 0.60)  # 60% of max
         z2_max = int(MAX_HR * 0.70)  # 70% of max  
         z3_max = int(MAX_HR * 0.80)  # 80% of max
         z4_max = int(MAX_HR * 0.90)  # 90% of max
         
-        with col1:
-            # Avg HR by activity
-            fig_hr = go.Figure()
-            
-            # Define HR zones dynamically
-            def get_hr_zone(hr):
-                if hr < z1_max: return 'Z1 Recovery'
-                elif hr < z2_max: return 'Z2 Easy'
-                elif hr < z3_max: return 'Z3 Tempo'
-                elif hr < z4_max: return 'Z4 Threshold'
-                else: return 'Z5 Max'
-            
-            recent_with_hr['hr_zone'] = recent_with_hr['avg_hr'].apply(get_hr_zone)
-            
-            # Color by zone
-            zone_colors = {
-                'Z1 Recovery': '#3498db',
-                'Z2 Easy': '#2ecc71',
-                'Z3 Tempo': '#f39c12',
-                'Z4 Threshold': '#e74c3c',
-                'Z5 Max': '#9b59b6'
-            }
-            colors_hr = [zone_colors.get(z, 'gray') for z in recent_with_hr['hr_zone']]
-            
-            fig_hr.add_trace(go.Scatter(
-                x=recent_with_hr['date'],
-                y=recent_with_hr['avg_hr'],
-                mode='markers',
-                marker=dict(
-                    size=recent_with_hr['distance_km'] * 2,  # Size by distance
-                    color=colors_hr,
-                    line=dict(width=1, color='white')
-                ),
-                text=[f"{row['name']}<br>{row['distance_km']:.1f}km @ {row['avg_hr']:.0f}bpm" 
-                      for _, row in recent_with_hr.iterrows()],
-                hoverinfo='text'
-            ))
-            
-            # Add zone lines
-            fig_hr.add_hline(y=z1_max, line_dash="dot", line_color="#2ecc71", annotation_text="Z2", annotation_position="left")
-            fig_hr.add_hline(y=z2_max, line_dash="dot", line_color="#f39c12", annotation_text="Z3", annotation_position="left")
-            fig_hr.add_hline(y=z3_max, line_dash="dot", line_color="#e74c3c", annotation_text="Z4", annotation_position="left")
-            
-            fig_hr.update_layout(
-                title="Average HR by Activity (Last 20 Runs)",
-                xaxis_title="Date",
-                yaxis_title="Avg HR (bpm)",
-                yaxis_range=[100, 180],
-                showlegend=False,
-                height=400
-            )
-            
-            st.plotly_chart(fig_hr, use_container_width=True)
+        # Avg HR by activity
+        fig_hr = go.Figure()
         
-        with col2:
-            # Zone distribution pie
-            zone_counts = recent_with_hr['hr_zone'].value_counts()
-            
-            fig_pie = go.Figure(data=[go.Pie(
-                labels=zone_counts.index,
-                values=zone_counts.values,
-                marker_colors=[zone_colors.get(z, 'gray') for z in zone_counts.index],
-                hole=0.4
-            )])
-            
-            fig_pie.update_layout(
-                title="HR Zone Distribution (Last 20 Runs)",
-                height=400
-            )
-            
-            st.plotly_chart(fig_pie, use_container_width=True)
+        # Define HR zones dynamically
+        def get_hr_zone(hr):
+            if hr < z1_max: return 'Z1 Recovery'
+            elif hr < z2_max: return 'Z2 Easy'
+            elif hr < z3_max: return 'Z3 Tempo'
+            elif hr < z4_max: return 'Z4 Threshold'
+            else: return 'Z5 Max'
         
-        # Zone summary table
-        st.markdown(f"**HR Zone Guide (based on Max HR {MAX_HR}, RHR {BASELINE_RHR}):**")
-        zone_table = f"""
-| Zone | Name | BPM Range | Purpose |
-|------|------|-----------|--------|
-| Z1 | Recovery | <{z1_max} | Active recovery |
-| Z2 | Easy/Aerobic | {z1_max}-{z2_max} | Base building (most runs) |
-| Z3 | Tempo | {z2_max}-{z3_max} | Threshold development |
-| Z4 | Threshold | {z3_max}-{z4_max} | VO2max, intervals |
-| Z5 | Max | {z4_max}-{MAX_HR} | Race finish, strides |
-"""
-        st.markdown(zone_table)
+        recent_with_hr['hr_zone'] = recent_with_hr['avg_hr'].apply(get_hr_zone)
+        
+        # Color by zone
+        zone_colors = {
+            'Z1 Recovery': '#3498db',
+            'Z2 Easy': '#2ecc71',
+            'Z3 Tempo': '#f39c12',
+            'Z4 Threshold': '#e74c3c',
+            'Z5 Max': '#9b59b6'
+        }
+        colors_hr = [zone_colors.get(z, 'gray') for z in recent_with_hr['hr_zone']]
+        
+        fig_hr.add_trace(go.Scatter(
+            x=recent_with_hr['date'],
+            y=recent_with_hr['avg_hr'],
+            mode='markers',
+            marker=dict(
+                size=recent_with_hr['distance_km'] * 2,  # Size by distance
+                color=colors_hr,
+                line=dict(width=1, color='white')
+            ),
+            text=[f"{row['name']}<br>{row['distance_km']:.1f}km @ {row['avg_hr']:.0f}bpm" 
+                  for _, row in recent_with_hr.iterrows()],
+            hoverinfo='text'
+        ))
+        
+        # Add zone lines
+        fig_hr.add_hline(y=z1_max, line_dash="dot", line_color="#2ecc71", annotation_text="Z2", annotation_position="left")
+        fig_hr.add_hline(y=z2_max, line_dash="dot", line_color="#f39c12", annotation_text="Z3", annotation_position="left")
+        fig_hr.add_hline(y=z3_max, line_dash="dot", line_color="#e74c3c", annotation_text="Z4", annotation_position="left")
+        
+        fig_hr.update_layout(
+            title="Average HR by Activity (Last 20 Runs)",
+            xaxis_title="Date",
+            yaxis_title="Avg HR (bpm)",
+            yaxis_range=[100, 180],
+            showlegend=False,
+            height=400
+        )
+        
+        st.plotly_chart(fig_hr, use_container_width=True)
 
     # ============================================
     # RECOVERY RECOMMENDATIONS
     # ============================================
     st.markdown("---")
-    st.subheader("🎯 Recovery Assessment")
+    st.subheader("Recovery Assessment")
     
     # Build recommendations based on current data
     recommendations = []
@@ -525,7 +491,7 @@ try:
     # ============================================
     # DEBUG/DETAILS EXPANDER
     # ============================================
-    with st.expander("🔍 Debug: Raw Training Status Data"):
+    with st.expander("Debug: Raw Training Status Data"):
         st.json(training_status)
         
         if sleep_data:

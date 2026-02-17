@@ -22,7 +22,7 @@ from utils.metrics import (
 # Page config
 st.set_page_config(page_title="Race Confidence", page_icon="🏁", layout="wide")
 
-st.title("🏁 Race Confidence Analyzer")
+st.title("Race Confidence Analyzer")
 st.markdown("Build confidence through data-driven race readiness analysis")
 
 # Load data - NO CACHING to avoid pickle issues with datetime

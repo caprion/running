@@ -14,81 +14,19 @@ from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from utils.data_loader import activities_to_dataframe, get_weekly_summary
+from scripts.ai.plan_data import (
+    CAMPAIGN_START, WEEKLY_PLAN, PHASE_PACES, KEY_DATES,
+    get_campaign_week, get_phase_for_week,
+)
 
 # Page config
 st.set_page_config(page_title="Plan Compliance", page_icon="✅", layout="wide")
 
-st.title("✅ Plan Compliance")
+st.title("Plan Compliance")
 st.markdown("Track actual training vs 20-week plan targets")
-
-# ============================================
-# PLAN DATA (from plan.md)
-# ============================================
-
-# Campaign start date: Jan 5, 2026 (Week 1 starts)
-CAMPAIGN_START = datetime(2026, 1, 5)
-
-# Weekly plan targets
-WEEKLY_PLAN = {
-    1: {"phase": "Recovery", "volume_km": 19, "strength": 2, "key_workout": "Easy runs only"},
-    2: {"phase": "Recovery", "volume_km": 28, "strength": 2, "key_workout": "Fartlek reintroduction"},
-    3: {"phase": "Base", "volume_km": 35, "strength": 2, "key_workout": "First tempo (4km@5:55)"},
-    4: {"phase": "Base (Deload)", "volume_km": 30, "strength": 2, "key_workout": "Strides only"},
-    5: {"phase": "Base", "volume_km": 37, "strength": 2, "key_workout": "Tempo 5km@5:50"},
-    6: {"phase": "Base", "volume_km": 39, "strength": 2, "key_workout": "First intervals (5×1km@5:40)"},
-    7: {"phase": "Base", "volume_km": 42, "strength": 2, "key_workout": "Tempo 6km@5:45"},
-    8: {"phase": "Base (Deload)", "volume_km": 31, "strength": 2, "key_workout": "Strides only"},
-    9: {"phase": "Build", "volume_km": 41, "strength": 2, "key_workout": "Intervals 6×1km@5:35"},
-    10: {"phase": "Build", "volume_km": 43, "strength": 2, "key_workout": "Tempo 6km@5:40"},
-    11: {"phase": "Build", "volume_km": 42, "strength": 2, "key_workout": "VO2max 5×800m@5:15-5:25"},
-    12: {"phase": "Build", "volume_km": 40, "strength": 2, "key_workout": "Progressive threshold"},
-    13: {"phase": "10K Taper", "volume_km": 27, "strength": 2, "key_workout": "Sharpener 4×600m@5:15"},
-    14: {"phase": "10K RACE", "volume_km": 24, "strength": 1, "key_workout": "Race: Target 52:00-54:00"},
-    15: {"phase": "Specific", "volume_km": 25, "strength": 2, "key_workout": "Recovery week"},
-    16: {"phase": "Specific", "volume_km": 40, "strength": 2, "key_workout": "Long run 8km@5:50 (HM pace)"},
-    17: {"phase": "Specific", "volume_km": 44, "strength": 2, "key_workout": "Long run 10km@5:45-5:50 (KEY)"},
-    18: {"phase": "Specific", "volume_km": 38, "strength": 2, "key_workout": "HM rehearsal 5km@5:40"},
-    19: {"phase": "Taper", "volume_km": 28, "strength": 1, "key_workout": "Sharpener 3×1km@5:35"},
-    20: {"phase": "HM RACE", "volume_km": 35, "strength": 0, "key_workout": "Race: Target 2:00-2:03"},
-}
-
-# Phase pace targets (min/km as seconds for comparison)
-PHASE_PACES = {
-    "Recovery": {"easy": (435, 465), "tempo": None, "interval": None},  # 7:15-7:45
-    "Base": {"easy": (420, 450), "tempo": (350, 360), "interval": (330, 345)},  # 7:00-7:30, 5:50-6:00, 5:30-5:45
-    "Build": {"easy": (405, 435), "tempo": (340, 350), "interval": (320, 335)},  # 6:45-7:15, 5:40-5:50, 5:20-5:35
-    "Specific": {"easy": (405, 435), "tempo": (335, 345), "interval": (315, 330)},  # 6:45-7:15, 5:35-5:45, 5:15-5:30
-    "Taper": {"easy": (405, 435), "tempo": (335, 345), "interval": (315, 330)},
-}
-
-# Key dates
-KEY_DATES = {
-    "10K Race": datetime(2026, 4, 12),
-    "HM Race": datetime(2026, 5, 24),
-    "Goal Review": datetime(2026, 2, 22),  # Week 7 end
-}
-
-def get_campaign_week(date):
-    """Calculate which campaign week a date falls in (1-20)"""
-    if isinstance(date, str):
-        date = pd.to_datetime(date)
-    days_since_start = (date - CAMPAIGN_START).days
-    if days_since_start < 0:
-        return 0  # Before campaign
-    week = (days_since_start // 7) + 1
-    return min(week, 20)  # Cap at week 20
-
-def get_current_week():
-    """Get current campaign week"""
-    return get_campaign_week(datetime.now())
-
-def get_phase_for_week(week_num):
-    """Get phase name for a given week"""
-    if week_num in WEEKLY_PLAN:
-        return WEEKLY_PLAN[week_num]["phase"]
-    return "Unknown"
 
 try:
     df = activities_to_dataframe()
@@ -103,7 +41,7 @@ try:
     campaign_df['campaign_week'] = campaign_df['date'].apply(get_campaign_week)
     
     # Current week info
-    current_week = get_current_week()
+    current_week = get_campaign_week(datetime.now())
     current_phase = get_phase_for_week(current_week)
     
     # ============================================
@@ -352,6 +290,23 @@ try:
         
         See plan.md for adjustment protocol.
         """)
+
+    # ============================================
+    # FULL TRAINING PLAN (merged from Season Plan page)
+    # ============================================
+    st.markdown("---")
+    with st.expander("View Full Training Plan", expanded=False):
+        import os as _os
+        _use_sample = _os.getenv("USE_SAMPLE_DATA", "false").lower() == "true"
+        if _use_sample:
+            _plan_path = Path(__file__).parent.parent.parent / "sample-data" / "seasons" / "2025-sample-runner" / "plan.md"
+        else:
+            _plan_path = Path(__file__).parent.parent.parent / "seasons" / "2026-spring-hm-sub2" / "plan.md"
+        if _plan_path.exists():
+            with open(_plan_path, 'r', encoding='utf-8') as _f:
+                st.markdown(_f.read())
+        else:
+            st.info(f"Plan file not found: {_plan_path}")
 
     # ============================================
     # DEBUG EXPANDER

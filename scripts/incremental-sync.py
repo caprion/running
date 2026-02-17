@@ -270,7 +270,11 @@ class IncrementalSync:
                                 'maxHR': lap.get('maxHR'),
                                 'averageRunCadence': lap.get('averageRunCadence'),
                                 'maxRunCadence': lap.get('maxRunCadence'),
-                                'strideLength': lap.get('strideLength'),  # Required for Form page
+                                'strideLength': lap.get('strideLength'),
+                                'elevationGain': lap.get('elevationGain'),
+                                'elevationLoss': lap.get('elevationLoss'),
+                                'startElevation': lap.get('startElevation'),
+                                'endElevation': lap.get('endElevation'),
                             }
                             act_data['splits']['lapDTOs'].append(lap_data)
 
@@ -363,32 +367,50 @@ class IncrementalSync:
                         if status_data['training_load_7d']:
                             print(f"[INFO] Training Load 7d: {status_data['training_load_7d']}")
 
-                    # Extract training status label
+                    # Extract training status label — pick most recent device
                     training_status_obj = training_status.get('mostRecentTrainingStatus')
+                    best_device_id = None
                     if training_status_obj:
                         latest_data = training_status_obj.get('latestTrainingStatusData')
                         if latest_data and isinstance(latest_data, dict):
+                            status_map = {
+                                1: 'Detraining', 2: 'Recovery', 3: 'Maintaining',
+                                4: 'Productive', 5: 'Peaking', 6: 'Overreaching',
+                                7: 'Unproductive', 8: 'No Status', 9: 'Recovery'
+                            }
+                            best_device_data = None
+                            best_timestamp = None
                             for device_id, device_data in latest_data.items():
-                                if isinstance(device_data, dict):
-                                    status_data['training_effect_label'] = device_data.get('trainingStatusFeedbackPhrase')
-                                    
-                                    if not status_data['training_effect_label']:
-                                        numeric_status = device_data.get('trainingStatus')
-                                        status_map = {
-                                            1: 'Detraining', 2: 'Recovery', 3: 'Maintaining',
-                                            4: 'Productive', 5: 'Peaking', 6: 'Overreaching',
-                                            7: 'Unproductive', 8: 'No Status', 9: 'Recovery'
-                                        }
-                                        status_data['training_effect_label'] = status_map.get(numeric_status, f'Unknown ({numeric_status})')
-                                    
-                                    status_data['recovery_time_hours'] = device_data.get('recoveryTimeInHours')
-                                    
-                                    if not status_data['training_load_7d']:
-                                        status_data['training_load_7d'] = device_data.get('weeklyTrainingLoad')
-                                    break
+                                if not isinstance(device_data, dict):
+                                    continue
+                                # Pick device with most recent timestamp
+                                ts = device_data.get('timestamp') or device_data.get('calendarDate') or ''
+                                if best_timestamp is None or str(ts) > str(best_timestamp):
+                                    best_device_id = device_id
+                                    best_device_data = device_data
+                                    best_timestamp = ts
+                                elif str(ts) == str(best_timestamp or ''):
+                                    # Tie-break: prefer device with a real status (not 8/No Status)
+                                    cur_status = device_data.get('trainingStatus')
+                                    best_status = best_device_data.get('trainingStatus') if best_device_data else None
+                                    if best_status == 8 and cur_status is not None and cur_status != 8:
+                                        best_device_id = device_id
+                                        best_device_data = device_data
+                                        best_timestamp = ts
+
+                            if best_device_data:
+                                # Use numeric trainingStatus as primary source
+                                numeric_status = best_device_data.get('trainingStatus')
+                                label = status_map.get(numeric_status, f'Unknown ({numeric_status})') if numeric_status is not None else None
+                                if not label:
+                                    label = best_device_data.get('trainingStatusFeedbackPhrase')
+                                status_data['training_effect_label'] = label
+                                status_data['recovery_time_hours'] = best_device_data.get('recoveryTimeInHours')
+                                if not status_data['training_load_7d']:
+                                    status_data['training_load_7d'] = best_device_data.get('weeklyTrainingLoad')
                         
                         if status_data['training_effect_label']:
-                            print(f"[INFO] Training Status: {status_data['training_effect_label']}")
+                            print(f"[INFO] Training Status: {status_data['training_effect_label']} (device: {best_device_id})")
 
                     if status_data['vo2max'] or status_data['training_load_7d']:
                         break
@@ -899,12 +921,26 @@ Examples:
         action='store_true',
         help='Test mode - fetch and merge but don\'t save changes'
     )
+    parser.add_argument(
+        '--enrich',
+        action='store_true',
+        help='Run AI metrics enrichment after sync'
+    )
 
     args = parser.parse_args()
 
     # Run sync
     syncer = IncrementalSync(dry_run=args.dry_run)
     success = syncer.run(days=args.days)
+
+    # AI enrichment (after sync, if requested)
+    if success and args.enrich and not args.dry_run:
+        try:
+            from ai.compute import enrich
+            print("\n[AI] Computing metrics...")
+            enrich(days=args.days)
+        except Exception as e:
+            print(f"[AI] Enrichment failed (non-fatal): {e}")
 
     sys.exit(0 if success else 1)
 

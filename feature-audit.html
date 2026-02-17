@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Running App Feature Audit</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf6f0;
+    --surface: #ffffff;
+    --border: #ede4d5;
+    --text: #3d2b1f;
+    --text-muted: #8b7560;
+    --accent: #c2452d;
+    --action: #1a5c4c;
+    --tertiary: #c4a67d;
+    --shadow: rgba(61,43,31,0.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  h1, h2, h3 { font-family: 'Libre Baskerville', serif; font-weight: 400; }
+  code { font-family: 'IBM Plex Mono', monospace; font-size: 0.9em; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 0;
+  }
+  header .container { display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 1.6rem; color: var(--text); }
+  .date { color: var(--text-muted); font-size: 0.85rem; }
+
+  /* Summary Cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .summary-card .label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .summary-card .value { font-size: 2rem; font-weight: 600; margin: 0.25rem 0; }
+  .summary-card .sub { font-size: 0.85rem; color: var(--text-muted); }
+  .value.keep { color: var(--action); }
+  .value.drop { color: var(--accent); }
+  .value.change { color: var(--tertiary); }
+  .value.total { color: var(--text); }
+
+  /* Sections */
+  section { margin: 2.5rem 0; }
+  section h2 { font-size: 1.3rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+
+  /* Feature Table */
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px var(--shadow); }
+  th { background: var(--text); color: var(--bg); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 1rem; text-align: left; }
+  td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f2ea; }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge.keep { background: #e8f5e9; color: #1a5c4c; }
+  .badge.drop { background: #fce4e4; color: #c2452d; }
+  .badge.change { background: #fff3e0; color: #8b6914; }
+
+  .score-bar {
+    display: inline-block;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border);
+    width: 60px;
+    position: relative;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+  }
+  .score-bar .fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-radius: 4px;
+  }
+  .fill.high { background: var(--action); }
+  .fill.mid { background: var(--tertiary); }
+  .fill.low { background: var(--accent); }
+
+  /* Benchmark */
+  .benchmark-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .bench-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .bench-card h3 { font-size: 1rem; margin-bottom: 0.75rem; }
+  .bench-item { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+  .bench-item:last-child { border-bottom: none; }
+  .has { color: var(--action); font-weight: 500; }
+  .missing { color: var(--accent); font-weight: 500; }
+  .partial { color: var(--tertiary); font-weight: 500; }
+
+  /* Architecture */
+  .arch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px var(--shadow);
+    margin-bottom: 1rem;
+  }
+  .arch-card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+  .arch-card p { font-size: 0.9rem; color: var(--text-muted); }
+  .arch-list { list-style: none; padding: 0; }
+  .arch-list li { padding: 0.35rem 0; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
+  .arch-list li:last-child { border-bottom: none; }
+
+  /* AI Section */
+  .ai-card {
+    background: var(--surface);
+    border: 2px solid var(--action);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .ai-card h3 { color: var(--action); margin-bottom: 0.75rem; }
+
+  /* Differentiators */
+  .diff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .diff-card {
+    background: var(--surface);
+    border-left: 3px solid var(--action);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .diff-card h3 { font-size: 0.95rem; margin-bottom: 0.35rem; }
+  .diff-card p { font-size: 0.85rem; color: var(--text-muted); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 1rem; }
+  .tab { padding: 0.6rem 1.25rem; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; font-weight: 500; font-size: 0.9rem; color: var(--text-muted); }
+  .tab.active { border-bottom-color: var(--accent); color: var(--text); }
+  .tab:hover { color: var(--text); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Page Consolidation */
+  .page-map { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .page-col h3 { font-size: 1rem; margin-bottom: 0.75rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
+  .page-item { padding: 0.4rem 0; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+  .arrow { color: var(--accent); font-weight: 600; }
+  .strike { text-decoration: line-through; color: var(--text-muted); }
+
+  @media (max-width: 768px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .benchmark-grid { grid-template-columns: 1fr; }
+    .diff-grid { grid-template-columns: 1fr; }
+    .page-map { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>Running App Feature Audit</h1>
+    <span class="date">Generated Feb 17, 2026</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Summary -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="label">Total Features</div>
+      <div class="value total">61</div>
+      <div class="sub">Dashboard + Scripts + Docs</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Keep</div>
+      <div class="value keep">30</div>
+      <div class="sub">Avg score: 7.5</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Drop</div>
+      <div class="value drop">22</div>
+      <div class="sub">Avg score: 3.3</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Change</div>
+      <div class="value change">9</div>
+      <div class="sub">Avg score: 5.6</div>
+    </div>
+  </div>
+
+  <!-- Top Differentiators -->
+  <section>
+    <h2>Top Differentiators (What No Competitor Has)</h2>
+    <div class="diff-grid">
+      <div class="diff-card">
+        <h3>Consistency Floor Tracking</h3>
+        <p>RED/YELLOW/GREEN volume floors with streak tracking. Strava, Garmin, Nike, Runna -- none have this. Reddit runners constantly ask for it.</p>
+      </div>
+      <div class="diff-card">
+        <h3>Pace Degradation Analysis</h3>
+        <p>Measures how pace fades in long runs (first quarter vs last quarter). Strava has Best Efforts but not within-run degradation. Advanced coaching insight.</p>
+      </div>
+      <div class="diff-card">
+        <h3>Historical Collapse Prediction</h3>
+        <p>Risk calendar based on 4 years of your own data showing when training collapses historically happen. Completely unique to your running patterns.</p>
+      </div>
+      <div class="diff-card">
+        <h3>Race Readiness Checklist</h3>
+        <p>4-point readiness score with specific criteria (pace sustained, long runs done, volume at race pace). No app offers this structured readiness check.</p>
+      </div>
+      <div class="diff-card">
+        <h3>Season-over-Season Comparison</h3>
+        <p>Compare training blocks across seasons with quality session counts, violation rates, and volume trends. Garmin Connect+ only does basic time comparison.</p>
+      </div>
+      <div class="diff-card">
+        <h3>Plan vs Actual Compliance</h3>
+        <p>20-week plan tracking with phase, target volume, actual volume, and status per week. Runna adapts plans but doesn't show compliance history like this.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Inventory -->
+  <section>
+    <h2>Feature Inventory</h2>
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('keep')">Keep (30)</div>
+      <div class="tab" onclick="showTab('change')">Change (9)</div>
+      <div class="tab" onclick="showTab('drop')">Drop (22)</div>
+    </div>
+
+    <div class="tab-content active" id="tab-keep">
+      <table>
+        <tr><th>Feature</th><th>Score</th><th>Source</th><th>Rationale</th></tr>
+        <tr><td>Weekly volume tracking</td><td><span class="score-bar"><span class="fill high" style="width:100%"></span></span>10</td><td>Consistency</td><td>Core differentiator. Floor-based consistency tracking is unique.</td></tr>
+        <tr><td>Pace degradation analysis</td><td><span class="score-bar"><span class="fill high" style="width:100%"></span></span>10</td><td>Race Confidence</td><td>Unique analysis. No competitor does this.</td></tr>
+        <tr><td>Garmin incremental sync</td><td><span class="score-bar"><span class="fill high" style="width:100%"></span></span>10</td><td>Script</td><td>Core infrastructure. Essential.</td></tr>
+        <tr><td>Consistency streak</td><td><span class="score-bar"><span class="fill high" style="width:90%"></span></span>9</td><td>Consistency</td><td>Motivational and actionable. No competitor tracks this.</td></tr>
+        <tr><td>Season comparison</td><td><span class="score-bar"><span class="fill high" style="width:90%"></span></span>9</td><td>Season Compare</td><td>Unique. Garmin can't compare seasons like this.</td></tr>
+        <tr><td>Race confidence score</td><td><span class="score-bar"><span class="fill high" style="width:90%"></span></span>9</td><td>Race Confidence</td><td>No app does readiness checklists like this.</td></tr>
+        <tr><td>Risk calendar</td><td><span class="score-bar"><span class="fill high" style="width:90%"></span></span>9</td><td>Risk Monitor</td><td>Historical collapse prediction. Completely unique.</td></tr>
+        <tr><td>Plan compliance chart</td><td><span class="score-bar"><span class="fill high" style="width:90%"></span></span>9</td><td>Compliance</td><td>Plan vs actual -- what Garmin/Strava don't do well.</td></tr>
+        <tr><td>Weekly volume per season</td><td><span class="score-bar"><span class="fill high" style="width:80%"></span></span>8</td><td>Season Compare</td><td>Visual season progression is compelling.</td></tr>
+        <tr><td>HR stability in long runs</td><td><span class="score-bar"><span class="fill high" style="width:80%"></span></span>8</td><td>Race Confidence</td><td>HR drift tracking is advanced coaching insight.</td></tr>
+        <tr><td>Cadence by pace bracket</td><td><span class="score-bar"><span class="fill high" style="width:80%"></span></span>8</td><td>Form</td><td>Unique. Breaking cadence by pace bracket is advanced.</td></tr>
+        <tr><td>Full plan status table</td><td><span class="score-bar"><span class="fill high" style="width:80%"></span></span>8</td><td>Compliance</td><td>Full season view with status. Unique.</td></tr>
+        <tr><td>Data integrity checker</td><td><span class="score-bar"><span class="fill high" style="width:80%"></span></span>8</td><td>Script</td><td>Data safety. Essential for cache-based system.</td></tr>
+        <tr><td>4-week rolling average</td><td><span class="score-bar"><span class="fill high" style="width:70%"></span></span>7</td><td>Consistency</td><td>Useful trend smoothing. Standard analytics.</td></tr>
+        <tr><td>Collapse history tracker</td><td><span class="score-bar"><span class="fill high" style="width:70%"></span></span>7</td><td>Risk Monitor</td><td>Valuable for pattern awareness.</td></tr>
+        <tr><td>Cadence trend</td><td><span class="score-bar"><span class="fill high" style="width:70%"></span></span>7</td><td>Form</td><td>Garmin shows per-run but not trend analysis.</td></tr>
+        <tr><td>Upcoming workouts</td><td><span class="score-bar"><span class="fill high" style="width:70%"></span></span>7</td><td>Compliance</td><td>Lookahead for preparation.</td></tr>
+        <tr><td>Race countdowns</td><td><span class="score-bar"><span class="fill high" style="width:70%"></span></span>7</td><td>Compliance</td><td>Motivational and practical.</td></tr>
+      </table>
+    </div>
+
+    <div class="tab-content" id="tab-change">
+      <table>
+        <tr><th>Feature</th><th>Score</th><th>Recommendation</th></tr>
+        <tr><td>Training load trend</td><td><span class="score-bar"><span class="fill mid" style="width:70%"></span></span>7</td><td>Keep but refocus on weekly volume context that Garmin doesn't show</td></tr>
+        <tr><td>Key insights text</td><td><span class="score-bar"><span class="fill mid" style="width:60%"></span></span>6</td><td>Replace hardcoded text with AI-generated insights from run data</td></tr>
+        <tr><td>Race pace calculator</td><td><span class="score-bar"><span class="fill mid" style="width:60%"></span></span>6</td><td>Simplify -- preset race distances (5K, 10K, HM, FM), less manual config</td></tr>
+        <tr><td>Gait video tracker</td><td><span class="score-bar"><span class="fill mid" style="width:60%"></span></span>6</td><td>Make schedule dynamic based on actual season dates, not hardcoded</td></tr>
+        <tr><td>Consistency guardian CLI</td><td><span class="score-bar"><span class="fill mid" style="width:60%"></span></span>6</td><td>Dashboard has this. Keep CLI only for headless/cron usage</td></tr>
+        <tr><td>Weekly log viewer</td><td><span class="score-bar"><span class="fill mid" style="width:50%"></span></span>5</td><td>Replace with AI-generated weekly summary. Or merge into Compliance page</td></tr>
+        <tr><td>Recovery assessment</td><td><span class="score-bar"><span class="fill mid" style="width:50%"></span></span>5</td><td>Replace generic text with AI-generated recovery advice based on actual data</td></tr>
+        <tr><td>Arm swing focus</td><td><span class="score-bar"><span class="fill mid" style="width:50%"></span></span>5</td><td>Season-specific content. Move to plan docs, not permanent dashboard</td></tr>
+        <tr><td>Season plan viewer</td><td><span class="score-bar"><span class="fill mid" style="width:40%"></span></span>4</td><td>Just renders markdown. Merge into Compliance or make interactive calendar</td></tr>
+      </table>
+    </div>
+
+    <div class="tab-content" id="tab-drop">
+      <table>
+        <tr><th>Feature</th><th>Score</th><th>Why Drop</th></tr>
+        <tr><td>Legacy Garmin sync</td><td><span class="score-bar"><span class="fill low" style="width:20%"></span></span>2</td><td>Replaced by incremental-sync. Dead code.</td></tr>
+        <tr><td>Dashboard screenshot tool</td><td><span class="score-bar"><span class="fill low" style="width:20%"></span></span>2</td><td>One-off demo tool.</td></tr>
+        <tr><td>Implementation summary doc</td><td><span class="score-bar"><span class="fill low" style="width:20%"></span></span>2</td><td>Meta build notes. Not useful going forward.</td></tr>
+        <tr><td>Doc enhancement summary</td><td><span class="score-bar"><span class="fill low" style="width:20%"></span></span>2</td><td>Meta-doc about docs. Remove.</td></tr>
+        <tr><td>VO2max display</td><td><span class="score-bar"><span class="fill low" style="width:30%"></span></span>3</td><td>Garmin shows this natively. Duplicated data.</td></tr>
+        <tr><td>Sleep duration trend</td><td><span class="score-bar"><span class="fill low" style="width:30%"></span></span>3</td><td>Garmin does this natively with better accuracy.</td></tr>
+        <tr><td>Sleep stages breakdown</td><td><span class="score-bar"><span class="fill low" style="width:30%"></span></span>3</td><td>Garmin sleep stages are better in native app.</td></tr>
+        <tr><td>Sample data generator</td><td><span class="score-bar"><span class="fill low" style="width:30%"></span></span>3</td><td>One-off demo tool. Sample data already generated.</td></tr>
+        <tr><td>Cadence-pace analyzer script</td><td><span class="score-bar"><span class="fill low" style="width:30%"></span></span>3</td><td>Experimental one-off. Results already known.</td></tr>
+        <tr><td>Agent documentation (10+ files)</td><td><span class="score-bar"><span class="fill low" style="width:30%"></span></span>3</td><td>Over-engineered for a personal project.</td></tr>
+        <tr><td>Contributing guide</td><td><span class="score-bar"><span class="fill low" style="width:30%"></span></span>3</td><td>No external contributors.</td></tr>
+        <tr><td>Status breakdown pie chart</td><td><span class="score-bar"><span class="fill low" style="width:40%"></span></span>4</td><td>Adds little value over the bar chart. Visual clutter.</td></tr>
+        <tr><td>HR zone distribution</td><td><span class="score-bar"><span class="fill low" style="width:40%"></span></span>4</td><td>Garmin shows this better with actual zone definitions.</td></tr>
+        <tr><td>Stress levels trend</td><td><span class="score-bar"><span class="fill low" style="width:40%"></span></span>4</td><td>Garmin stress tracking is native. Not additive.</td></tr>
+        <tr><td>Resting HR tracking</td><td><span class="score-bar"><span class="fill low" style="width:40%"></span></span>4</td><td>Garmin tracks RHR natively. Duplicated.</td></tr>
+        <tr><td>Cadence vs stride scatter</td><td><span class="score-bar"><span class="fill low" style="width:40%"></span></span>4</td><td>Noisy scatter plot. Rarely actionable.</td></tr>
+        <tr><td>HTML dashboard exporter</td><td><span class="score-bar"><span class="fill low" style="width:40%"></span></span>4</td><td>One-off demo tool.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Competitive Benchmark -->
+  <section>
+    <h2>Competitive Benchmark</h2>
+    <div class="benchmark-grid">
+      <div class="bench-card">
+        <h3>vs Strava</h3>
+        <div class="bench-item"><span>Volume floor tracking</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Pace degradation analysis</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Race readiness checklist</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Plan compliance tracking</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>AI athlete intelligence</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>Social features / kudos</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>Segment leaderboards</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>Best Efforts tracking</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>Fitness &amp; Freshness</span><span class="missing">They have it, you don't</span></div>
+      </div>
+      <div class="bench-card">
+        <h3>vs Garmin Connect</h3>
+        <div class="bench-item"><span>Collapse risk prediction</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Season comparison</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Cadence by pace bracket</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Consistency streaks</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Sleep/Recovery details</span><span class="missing">They do it better</span></div>
+        <div class="bench-item"><span>VO2max / Training Status</span><span class="missing">They do it better</span></div>
+        <div class="bench-item"><span>HR zone precision</span><span class="missing">They do it better</span></div>
+        <div class="bench-item"><span>Custom dashboards (Connect+)</span><span class="missing">They have it, you don't</span></div>
+      </div>
+      <div class="bench-card">
+        <h3>vs Runna</h3>
+        <div class="bench-item"><span>Collapse pattern analysis</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Race confidence scoring</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Historical data ownership</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Adaptive training plans</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>Strength/mobility plans</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>Nutrition guidance</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>AI coaching cues</span><span class="missing">They have it, you don't</span></div>
+      </div>
+      <div class="bench-card">
+        <h3>vs Nike Run Club</h3>
+        <div class="bench-item"><span>Deep analytics dashboard</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Training plan compliance</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Data privacy (local only)</span><span class="has">You have it, they don't</span></div>
+        <div class="bench-item"><span>Audio guided runs</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>Free structured plans</span><span class="missing">They have it, you don't</span></div>
+        <div class="bench-item"><span>Safety / live location</span><span class="missing">They have it, you don't</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Recommendations -->
+  <section>
+    <h2>Recommended Architecture Changes</h2>
+
+    <div class="page-map">
+      <div class="page-col">
+        <h3>Current Pages (10)</h3>
+        <div class="page-item">1. Consistency Guardian</div>
+        <div class="page-item">2. Season Compare</div>
+        <div class="page-item">3. Race Confidence</div>
+        <div class="page-item">4. <span class="strike">Season Plan</span> <span class="arrow">--></span> merge into Compliance</div>
+        <div class="page-item">5. <span class="strike">Weekly Logs</span> <span class="arrow">--></span> replace with AI Overview</div>
+        <div class="page-item">6. Risk Monitor</div>
+        <div class="page-item">7. <span class="strike">Training Load</span> <span class="arrow">--></span> merge useful parts into Consistency</div>
+        <div class="page-item">8. <span class="strike">Recovery</span> <span class="arrow">--></span> drop (Garmin does it better)</div>
+        <div class="page-item">9. Form</div>
+        <div class="page-item">10. Compliance</div>
+      </div>
+      <div class="page-col">
+        <h3>Proposed Pages (7)</h3>
+        <div class="page-item" style="color:var(--action); font-weight:500">1. Consistency Guardian (enhanced)</div>
+        <div class="page-item" style="color:var(--action); font-weight:500">2. Season Compare</div>
+        <div class="page-item" style="color:var(--action); font-weight:500">3. Race Confidence</div>
+        <div class="page-item" style="color:var(--action); font-weight:500">4. Compliance + Plan (merged)</div>
+        <div class="page-item" style="color:var(--action); font-weight:500">5. Risk Monitor</div>
+        <div class="page-item" style="color:var(--action); font-weight:500">6. Form Analysis</div>
+        <div class="page-item" style="color:var(--accent); font-weight:600">7. AI Run Overview (NEW)</div>
+      </div>
+    </div>
+
+    <div class="arch-card" style="margin-top:1.5rem">
+      <h3>Scripts Cleanup</h3>
+      <ul class="arch-list">
+        <li><strong>Keep (7):</strong> incremental-sync, daily-sync, create-garmin-workouts, weekly-summary, verify-data-integrity, backfill-hr-streams, import-session</li>
+        <li><strong>Move to archived/ (6):</strong> sync-garmin (legacy), analyze-cadence-pace, analyze-cadence-speed, check-cadence, export-dashboards-html, capture-dashboard-screenshot</li>
+        <li><strong>Keep but low priority (2):</strong> parse-fit, generate-sample-data</li>
+        <li><strong>Rename consistency-guardian.py:</strong> Keep for headless/cron usage only (dashboard does this now)</li>
+      </ul>
+    </div>
+
+    <div class="arch-card">
+      <h3>Docs Cleanup</h3>
+      <ul class="arch-list">
+        <li><strong>Keep (5):</strong> CLAUDE.md, README.md, WORKFLOW.md, QUICK-START.md, docs/ARCHITECTURE.md</li>
+        <li><strong>Keep if workout feature stays (2):</strong> GARMIN-WORKOUT-AUTOMATION.md, docs/garmin-workout-creation-guide.md</li>
+        <li><strong>Delete (4):</strong> CONTRIBUTING.md, IMPLEMENTATION-SUMMARY.md, DOCUMENTATION-ENHANCEMENT-SUMMARY.md, TRAINING-DASHBOARD.md</li>
+        <li><strong>Archive (1):</strong> docs/agents/ (10+ files of agent meta-docs -- over-engineered for personal project)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- AI Run Overview Design -->
+  <section>
+    <h2>AI Run Overview (New Feature Design)</h2>
+    <div class="ai-card">
+      <h3>What It Does</h3>
+      <p style="margin-bottom:1rem">A new dashboard page that uses Copilot agents to generate natural-language analysis of your runs, weekly trends, and training trajectory. Replaces the static Weekly Logs and generic Recovery recommendations.</p>
+
+      <h3>Data Sources</h3>
+      <ul class="arch-list">
+        <li><strong>Per-run analysis:</strong> Read from unified-cache.json -- distance, pace, HR, cadence, splits, elevation</li>
+        <li><strong>Weekly trends:</strong> Aggregate last 4 weeks -- volume trend, consistency status, quality session count</li>
+        <li><strong>Season context:</strong> Current plan phase, compliance %, upcoming key workouts, risk level</li>
+        <li><strong>Historical context:</strong> Same week last season comparison, PR proximity, floor violations</li>
+      </ul>
+
+      <h3 style="margin-top:1rem">Sample AI Output</h3>
+      <div style="background:var(--bg); border-radius:6px; padding:1rem; margin-top:0.5rem; font-size:0.9rem; border:1px solid var(--border);">
+        <p><strong>This Week (Week 6, Feb 10-16):</strong> 32.4km across 4 runs. Volume is tracking at 94% of plan (target: 34km). Your Thursday tempo at 5:28/km was the highlight -- 5s faster than your Week 4 tempo at similar HR (152 bpm), suggesting genuine fitness gains rather than just pace-chasing.</p>
+        <p style="margin-top:0.75rem"><strong>Trend:</strong> Rolling 4-week average is 31.2km, up from 26.8km four weeks ago. You've had 5 consecutive GREEN weeks. Cadence has improved from 162 to 166 spm in easy runs.</p>
+        <p style="margin-top:0.75rem"><strong>Watch for:</strong> Your long run HR drift was 8.2% (target: under 5%). Consider starting 10-15s/km slower. Saturday's long run averaged 5:52/km -- similar effort at 6:05/km would keep drift under control.</p>
+      </div>
+
+      <h3 style="margin-top:1rem">Implementation Path</h3>
+      <ul class="arch-list">
+        <li><strong>Phase 1:</strong> Add a "generate AI overview" button to the dashboard that calls a Python script</li>
+        <li><strong>Phase 2:</strong> Script reads unified-cache.json, computes metrics, formats prompt for Copilot agent</li>
+        <li><strong>Phase 3:</strong> Agent returns structured analysis (run summary, trend, watch-for items)</li>
+        <li><strong>Phase 4:</strong> Cache the generated overview in .github/framework/artifacts/ for quick reload</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Reddit Sentiment -->
+  <section>
+    <h2>What Reddit Runners Want (That You Already Have)</h2>
+    <div class="benchmark-grid">
+      <div class="bench-card">
+        <h3>High Demand -- You Have It</h3>
+        <div class="bench-item"><span>Consistency tracking with floors</span><span class="has">Your app</span></div>
+        <div class="bench-item"><span>Plan vs actual compliance</span><span class="has">Your app</span></div>
+        <div class="bench-item"><span>Season-over-season comparison</span><span class="has">Your app</span></div>
+        <div class="bench-item"><span>Injury risk / collapse prediction</span><span class="has">Your app</span></div>
+        <div class="bench-item"><span>Local data ownership (no cloud)</span><span class="has">Your app</span></div>
+      </div>
+      <div class="bench-card">
+        <h3>High Demand -- You Don't Have It Yet</h3>
+        <div class="bench-item"><span>Adaptive AI training plans</span><span class="missing">Gap</span></div>
+        <div class="bench-item"><span>Strength/mobility integration</span><span class="missing">Gap</span></div>
+        <div class="bench-item"><span>AI-generated run summaries</span><span class="partial">Planned</span></div>
+        <div class="bench-item"><span>Custom workout UI (drag-drop)</span><span class="missing">Gap</span></div>
+        <div class="bench-item"><span>Cross-app unified sync</span><span class="partial">Partial (Garmin only)</span></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+</script>
+
+</body>
+</html>

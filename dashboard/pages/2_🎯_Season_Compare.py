@@ -15,13 +15,13 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.data_loader import activities_to_dataframe, get_training_status
+from utils.data_loader import activities_to_dataframe
 from utils.metrics import FLOOR_THRESHOLD, YELLOW_THRESHOLD, get_pace_in_seconds
 
 # Page config
 st.set_page_config(page_title="Season Comparison", page_icon="🎯", layout="wide")
 
-st.title("🎯 Season Comparison")
+st.title("Season Comparison")
 st.markdown("Analyze and compare training patterns across different seasons")
 
 # Load data
@@ -295,25 +295,6 @@ try:
 
     st.plotly_chart(fig_long, use_container_width=True)
 
-    # Training status & VO2max
-    st.header("Fitness Metrics")
-
-    training_status = get_training_status()
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        vo2max = training_status.get('vo2max', 'N/A')
-        st.metric("Current VO2max", vo2max)
-
-    with col2:
-        training_load = training_status.get('training_load_7d', 'N/A')
-        st.metric("Training Load (7d)", training_load)
-
-    with col3:
-        status = training_status.get('training_effect_label', 'N/A')
-        st.metric("Training Status", status)
-
     # Insights
     st.markdown("---")
     st.header("Key Insights")
@@ -328,27 +309,27 @@ try:
         # Volume comparison
         volume_diff = season2['avg_km_per_week'] - season1['avg_km_per_week']
         if abs(volume_diff) > 2:
-            emoji = "📈" if volume_diff > 0 else "📉"
-            insights.append(f"{emoji} **Volume Change**: {abs(volume_diff):.1f} km/week {'higher' if volume_diff > 0 else 'lower'} in {season2['season']}")
+            direction = "higher" if volume_diff > 0 else "lower"
+            insights.append(f"**Volume Change**: {abs(volume_diff):.1f} km/week {direction} in {season2['season']}")
 
         # Quality sessions
         quality_diff = season2['quality_sessions'] - season1['quality_sessions']
         if abs(quality_diff) > 2:
-            emoji = "💪" if quality_diff > 0 else "🔽"
-            insights.append(f"{emoji} **Quality Work**: {abs(quality_diff)} {'more' if quality_diff > 0 else 'fewer'} quality sessions in {season2['season']}")
+            direction = "more" if quality_diff > 0 else "fewer"
+            insights.append(f"**Quality Work**: {abs(quality_diff)} {direction} quality sessions in {season2['season']}")
 
         # Consistency
         violation_change = season2['floor_violations'] - season1['floor_violations']
         if violation_change < 0:
-            insights.append(f"✅ **Improved Consistency**: {abs(violation_change)} fewer floor violations in {season2['season']}")
+            insights.append(f"**Improved Consistency**: {abs(violation_change)} fewer floor violations in {season2['season']}")
         elif violation_change > 0:
-            insights.append(f"⚠️ **Consistency Alert**: {violation_change} more floor violations in {season2['season']}")
+            insights.append(f"**Consistency Alert**: {violation_change} more floor violations in {season2['season']}")
 
         # Long runs
         long_run_diff = season2['long_runs'] - season1['long_runs']
         if abs(long_run_diff) > 1:
-            emoji = "🏃" if long_run_diff > 0 else "🔽"
-            insights.append(f"{emoji} **Long Run Volume**: {abs(long_run_diff)} {'more' if long_run_diff > 0 else 'fewer'} long runs in {season2['season']}")
+            direction = "more" if long_run_diff > 0 else "fewer"
+            insights.append(f"**Long Run Volume**: {abs(long_run_diff)} {direction} long runs in {season2['season']}")
 
         if insights:
             for insight in insights:

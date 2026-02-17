@@ -20,7 +20,7 @@ from utils.data_loader import activities_to_dataframe, load_activities, get_cade
 # Page config
 st.set_page_config(page_title="Form Analysis", page_icon="👟", layout="wide")
 
-st.title("👟 Form & Cadence Analysis")
+st.title("Form & Cadence Analysis")
 st.markdown("Track running form metrics and improvement over time")
 
 # Target ranges (based on your running data)
@@ -28,23 +28,6 @@ st.markdown("Track running form metrics and improvement over time")
 CADENCE_TARGET_MIN = 155  # spm - steps per minute (your realistic range)
 CADENCE_TARGET_MAX = 170  # Aspirational upper target
 STRIDE_EFFICIENCY_THRESHOLD = 1.0  # meters - roughly bodyweight dependent
-
-# Info box about arm swing focus
-with st.expander("🎯 Current Form Focus: Arm Swing", expanded=False):
-    st.markdown("""
-    **Issue Identified (Jan 2026):** Static 90° arm hold with limited anterior-posterior swing
-    
-    **Correction Plan:**
-    - Pre-run drill: 2min standing arm swing before EVERY run
-    - During-run: Exaggerated arm swing bursts (3-4 x 30s on easy runs)
-    - Post-run: Shoulder exercises (blade squeezes, band pull-aparts)
-    
-    **Gait Video Schedule:** Weeks 1, 5, 9, 13, 17
-    
-    **Expected Benefits:** Reduced tension, improved cadence, better breathing
-    
-    Full guide: `resources/arm-swing-drills-guide.md`
-    """)
 
 def extract_lap_metrics(activities):
     """Extract cadence and stride data from activity laps"""
@@ -166,7 +149,7 @@ try:
     # ============================================
     # CURRENT FORM SUMMARY
     # ============================================
-    st.subheader("📊 Current Form Metrics")
+    st.subheader("Current Form Metrics")
     
     # Calculate recent averages (last 5 runs)
     recent = act_df.tail(5)
@@ -184,10 +167,12 @@ try:
         cadence_delta = 0
         stride_delta = 0
     
-    col1, col2, col3, col4 = st.columns(4)
+    # Cadence consistency (coefficient of variation) - used in recommendations below
+    cv = (recent['avg_cadence'].std() / recent['avg_cadence'].mean() * 100) if avg_cadence > 0 else 0
+
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        cadence_status = "🟢" if CADENCE_TARGET_MIN <= avg_cadence <= CADENCE_TARGET_MAX else "🟡"
         st.metric(
             "Avg Cadence (5 runs)",
             f"{avg_cadence:.0f} spm",
@@ -204,30 +189,17 @@ try:
         )
     
     with col3:
-        # Efficiency: cadence × stride = speed
-        speed_factor = avg_cadence * avg_stride / 60  # m/s estimate
-        pace_estimate = 1000 / speed_factor / 60 if speed_factor > 0 else 0
-        st.metric(
-            "Form Efficiency",
-            f"{speed_factor:.2f} m/s",
-            help="Cadence × Stride ÷ 60. Higher = more efficient."
-        )
-    
-    with col4:
-        # Cadence consistency (coefficient of variation)
-        cv = (recent['avg_cadence'].std() / recent['avg_cadence'].mean() * 100) if avg_cadence > 0 else 0
-        consistency_status = "🟢" if cv < 3 else "🟡" if cv < 5 else "🔴"
         st.metric(
             "Cadence Consistency",
             f"{cv:.1f}% CV",
-            help="Coefficient of variation. Lower = more consistent form."
+            help="Coefficient of variation. Lower = more consistent form across runs."
         )
 
     # ============================================
     # CADENCE TREND
     # ============================================
     st.markdown("---")
-    st.subheader("📈 Cadence Trend")
+    st.subheader("Cadence Trend")
     
     fig_cadence = go.Figure()
     
@@ -280,15 +252,15 @@ try:
     # CADENCE BY PACE BRACKET (Simplified & Actionable)
     # ============================================
     st.markdown("---")
-    st.subheader("🎯 Cadence by Pace Bracket")
+    st.subheader("Cadence by Pace Bracket")
     st.caption("Are you hitting target cadence at each pace? Compares last 5 vs previous 5 laps per bracket.")
     
     # Define pace brackets and targets
     pace_brackets = {
-        'Fast': {'min': 0, 'max': 6.0, 'target': (162, 175), 'emoji': '⚡'},
-        'Moderate': {'min': 6.0, 'max': 6.5, 'target': (158, 168), 'emoji': '🏃'},
-        'Easy': {'min': 6.5, 'max': 7.0, 'target': (155, 165), 'emoji': '🚶'},
-        'Recovery': {'min': 7.0, 'max': 10.0, 'target': (150, 160), 'emoji': '💤'},
+        'Fast': {'min': 0, 'max': 6.0, 'target': (162, 175)},
+        'Moderate': {'min': 6.0, 'max': 6.5, 'target': (158, 168)},
+        'Easy': {'min': 6.5, 'max': 7.0, 'target': (155, 165)},
+        'Recovery': {'min': 7.0, 'max': 10.0, 'target': (150, 160)},
     }
     
     # Extract lap data with dates for trend analysis
@@ -366,7 +338,6 @@ try:
                     'trend_text': trend_text,
                     'status': status,
                     'target': bracket_config['target'],
-                    'emoji': bracket_config['emoji'],
                     'lap_count': len(recent_laps),
                     'total_laps': len(bracket_laps)
                 }
@@ -379,10 +350,10 @@ try:
             for bracket_name, data in bracket_analysis.items():
                 prev_str = f"{data['previous_avg']:.0f}" if data['previous_avg'] != data['recent_avg'] else "—"
                 st.markdown(
-                    f"| {data['emoji']} **{bracket_name}** | "
+                    f"| **{bracket_name}** | "
                     f"{data['recent_avg']:.0f} spm | "
                     f"{prev_str} spm | "
-                    f"{data['trend_icon']} {data['trend_text']} | "
+                    f"{data['trend_text']} | "
                     f"{data['target'][0]}-{data['target'][1]} | "
                     f"{data['status']} |"
                 )
@@ -394,13 +365,13 @@ try:
             
             st.markdown("")
             if improving_brackets:
-                st.success(f"📈 **Improving:** {', '.join(improving_brackets)} — cadence trending up!")
+                st.success(f"**Improving:** {', '.join(improving_brackets)} -- cadence trending up")
             if declining_brackets:
-                st.warning(f"📉 **Watch:** {', '.join(declining_brackets)} — cadence dropping")
+                st.warning(f"**Watch:** {', '.join(declining_brackets)} -- cadence dropping")
             if low_brackets and not improving_brackets:
-                st.info(f"💡 **Tip:** Focus on maintaining {low_brackets[0]} cadence above {pace_brackets[low_brackets[0]]['target'][0]} spm")
+                st.info(f"**Tip:** Focus on maintaining {low_brackets[0]} cadence above {pace_brackets[low_brackets[0]]['target'][0]} spm")
             elif not improving_brackets and not declining_brackets and not low_brackets:
-                st.success("✅ Cadence looking stable across all pace brackets!")
+                st.success("Cadence looking stable across all pace brackets")
             
             # Show how many laps analyzed
             total_laps = sum(data['total_laps'] for data in bracket_analysis.values())
@@ -414,7 +385,7 @@ try:
     # CADENCE PROGRESS TABLE (Pace-Normalized)
     # ============================================
     st.markdown("---")
-    st.subheader("📋 Cadence Progress (Pace-Normalized)")
+    st.subheader("Cadence Progress (Pace-Normalized)")
     st.caption("Compare cadence at similar paces to track real improvement vs just running faster")
     
     # Build activity data with proper metrics
@@ -487,7 +458,7 @@ try:
         col1, col2 = st.columns([1, 2])
         
         with col1:
-            st.markdown("##### 🎯 Latest Run")
+            st.markdown("##### Latest Run")
             st.metric("Date", most_recent['date'])
             st.metric("Pace", most_recent['pace'])
             st.metric("Cadence", f"{most_recent['cadence']:.0f} spm")
@@ -495,7 +466,7 @@ try:
                 st.metric("Stride", f"{most_recent['stride_cm']:.0f} cm")
         
         with col2:
-            st.markdown(f"##### 📊 Comparison at Similar Pace ({recent_bracket})")
+            st.markdown(f"##### Comparison at Similar Pace ({recent_bracket})")
             
             if len(similar_runs) > 0:
                 avg_cad = similar_runs['cadence'].mean()
@@ -531,7 +502,7 @@ try:
                 st.info(f"Not enough runs at {recent_bracket} pace for comparison yet.")
         
         # Detailed table
-        with st.expander("📋 Full Run Comparison Table", expanded=False):
+        with st.expander("Full Run Comparison Table", expanded=False):
             st.markdown("Recent runs with cadence and stride data:")
             
             # Format as markdown table instead of st.dataframe (avoids pyarrow dependency)
@@ -544,74 +515,10 @@ try:
                 st.markdown(f"| {row['date']} | {row['name'][:25]} | {row['distance_km']:.1f}km | {row['pace']} | {row['cadence']:.0f} spm | {stride_str} | {row['pace_bracket'][:8]} |")
     
     # ============================================
-    # CADENCE vs STRIDE SCATTER
-    # ============================================
-    st.markdown("---")
-    st.subheader("🎯 Cadence vs Stride")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Scatter plot: cadence vs stride (colored by HR if available)
-        if not lap_df.empty:
-            lap_recent = lap_df.tail(200)  # Last 200 laps
-            
-            fig_scatter = px.scatter(
-                lap_recent,
-                x='cadence',
-                y='stride_m',
-                color='pace_min_km',
-                size='distance_km',
-                hover_data=['activity_name', 'lap_index'],
-                color_continuous_scale='RdYlGn_r',  # Red = slow, Green = fast
-                labels={
-                    'cadence': 'Cadence (spm)',
-                    'stride_m': 'Stride Length (m)',
-                    'pace_min_km': 'Pace (min/km)'
-                }
-            )
-            
-            fig_scatter.update_layout(
-                title="Cadence vs Stride (colored by pace)",
-                height=400
-            )
-            
-            st.plotly_chart(fig_scatter, use_container_width=True)
-        else:
-            st.info("Lap-level data not available")
-    
-    with col2:
-        # Cadence distribution histogram
-        fig_hist = go.Figure()
-        
-        fig_hist.add_trace(go.Histogram(
-            x=act_filtered['avg_cadence'],
-            nbinsx=20,
-            marker_color='#3498db',
-            name='Cadence Distribution'
-        ))
-        
-        # Add target zone
-        fig_hist.add_vrect(
-            x0=CADENCE_TARGET_MIN, x1=CADENCE_TARGET_MAX,
-            fillcolor="rgba(46, 204, 113, 0.2)",
-            line_width=0
-        )
-        
-        fig_hist.update_layout(
-            title="Cadence Distribution",
-            xaxis_title="Cadence (spm)",
-            yaxis_title="Number of Runs",
-            height=400
-        )
-        
-        st.plotly_chart(fig_hist, use_container_width=True)
-
-    # ============================================
     # STRIDE LENGTH ANALYSIS
     # ============================================
     st.markdown("---")
-    st.subheader("📏 Stride Length Trend")
+    st.subheader("Stride Length Trend")
     
     fig_stride = go.Figure()
     
@@ -655,36 +562,10 @@ try:
     st.plotly_chart(fig_stride, use_container_width=True)
 
     # ============================================
-    # GAIT VIDEO TRACKER (Manual)
-    # ============================================
-    st.markdown("---")
-    st.subheader("🎥 Gait Video Progress Tracker")
-    
-    st.markdown("""
-    Track your form improvement with scheduled gait videos:
-    
-    | Week | Date | Status | Notes |
-    |------|------|--------|-------|
-    | 1 | Jan 10, 2026 | 🟡 Scheduled | Baseline recording |
-    | 5 | Feb 7, 2026 | ⬜ Upcoming | Early progress check |
-    | 9 | Mar 7, 2026 | ⬜ Upcoming | Mid-base assessment |
-    | 13 | Apr 4, 2026 | ⬜ Upcoming | Pre-10K taper |
-    | 17 | May 2, 2026 | ⬜ Upcoming | Pre-HM specific |
-    
-    **How to record:** Film from behind and side during easy running. Save to `media/gait-analysis/`.
-    
-    **What to look for:**
-    - Arm swing: Front-back motion, relaxed shoulders
-    - Foot strike: Midfoot landing under hips
-    - Hip drop: Minimal lateral movement
-    - Cadence: Quick, light steps
-    """)
-
-    # ============================================
     # FORM RECOMMENDATIONS
     # ============================================
     st.markdown("---")
-    st.subheader("💡 Form Recommendations")
+    st.subheader("Form Recommendations")
     
     recommendations = []
     
@@ -716,7 +597,7 @@ try:
     # ============================================
     # DEBUG EXPANDER
     # ============================================
-    with st.expander("🔍 Debug: Recent Activity Metrics"):
+    with st.expander("Debug: Recent Activity Metrics"):
         st.markdown("**Last 10 Activities:**")
         st.markdown("| Date | Activity | Dist | Cadence | Stride |")
         st.markdown("|------|----------|------|---------|--------|")

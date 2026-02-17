@@ -22,7 +22,7 @@
 
 ### Core Functionality
 - 🏃 **Sync activities** from Garmin Connect (incremental merge)
-- 📊 **Interactive dashboard** with 10 analysis pages
+- 📊 **Interactive dashboard** with 8 analysis pages
 - 💓 **Heart rate data** with per-km splits and zone analysis
 - 📈 **Training load** tracking and volume monitoring
 - 🎯 **Season planning** with race readiness metrics
@@ -82,18 +82,37 @@ Opens at `http://localhost:8501` (use `--server.port 8502` if 8501 is in use).
 
 ## Dashboard Pages
 
-| Page | Description |
-|------|-------------|
-| **📊 Consistency Guardian** | Weekly volume with color-coded status, streaks, rolling averages |
-| **🎯 Season Compare** | Side-by-side season comparison, VO2max progression |
-| **🏁 Race Confidence** | Pace sustainability, race calculator, fatigue resistance |
-| **📋 Season Plan** | Training plan calendar, workout scheduling |
-| **📝 Weekly Logs** | Detailed weekly summaries, notes, ratings |
-| **🚨 Risk Monitor** | Load spikes, consistency violations, recovery alerts |
-| **📈 Training Load** | ACWR, sleep quality, HR zone distribution |
-| **💤 Recovery** | Sleep stages, resting HR trends, recovery score |
-| **👟 Form** | Cadence trends, ground contact time, stride analysis |
-| **✅ Compliance** | Plan adherence, completed vs planned workouts |
+| # | Page | Description |
+|---|------|-------------|
+| 1 | **Consistency** | Weekly volume with color-coded status, streaks, rolling averages |
+| 2 | **Season Compare** | Side-by-side season comparison, VO2max progression |
+| 3 | **Race Confidence** | Pace sustainability, race calculator, fatigue resistance |
+| 4 | **Risk Monitor** | Load spikes, consistency violations, recovery alerts |
+| 5 | **Training Load** | ACWR, sleep quality, HR zone distribution |
+| 6 | **Form** | Cadence trends, stride analysis, gait tracking |
+| 7 | **Compliance** | Plan adherence, volume vs targets, full training plan |
+| 8 | **AI Overview** | Per-run metrics, weekly trends, risk alerts, Copilot analysis prompt |
+
+## AI Enrichment
+
+The dashboard includes an AI metrics pipeline that computes per-run and weekly insights:
+
+```bash
+# After syncing, compute AI metrics
+python scripts/incremental-sync.py --days 7 --enrich
+
+# Or compute metrics separately
+python -m scripts.ai.compute --days 60
+
+# Backfill all runs
+python -m scripts.ai.compute --force
+```
+
+**What gets computed:** pace drift, HR drift, cadence consistency, elevation profile, plan compliance, weekly streak, risk flags.
+
+**For full narrative analysis**, ask Copilot: `analyze my latest runs from the running project`
+
+Copilot reads the pre-computed metrics from `tracking/ai-insights.json` and generates coaching narratives with plan context.
 
 ---
 
