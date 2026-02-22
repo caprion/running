@@ -35,12 +35,182 @@ This is a long-term running training and performance tracking system for continu
 - **Narrative analysis:** Ask Copilot "analyze my latest runs" — reads ai-insights.json + unified-cache
 - **Training journal:** Copilot appends biweekly entries to training-journal.md
 
+## Unified Cache: Schema & How to Query Runs
+
+**Primary data source:** `tracking/unified-cache.json` — single source of truth (535+ runs, 2022–2026).
+
+Weekly logs in `seasons/*/weekly-logs/` may be unfilled — always read unified-cache.json for actual run data.
+
+### Top-level activity fields
+```
+id, name, type, date, distance_km, duration_seconds, avg_pace_min_km,
+elevation_gain_m, avg_hr, max_hr, calories, avg_cadence, splits, source
+```
+- **type** is `"running"` (lowercase) for runs; filter with `type.lower() in ['run', 'running']`
+- **date** is `"YYYY-MM-DD HH:MM:SS"` string, sort descending for latest
+- **splits.lapDTOs** contains per-km split data (array of objects)
+
+### Per-km split fields (`splits.lapDTOs[]`)
+```
+lapIndex, distance (1000.0), duration (seconds for 1km), averageSpeed,
+averageHR, maxHR, averageRunCadence, maxRunCadence, strideLength,
+elevationGain, elevationLoss, startElevation, endElevation
+```
+- **Pace** = `duration` seconds → `min:sec/km` (e.g., 400s = 6:40/km)
+- **Elevation** per km: `elevationGain` and `elevationLoss` in meters
+
+### Common analysis patterns
+
+**Get latest N runs:**
+```python
+import json
+data = json.load(open('tracking/unified-cache.json'))
+runs = sorted(
+    [a for a in data['activities'] if a.get('type','').lower() in ['run','running']],
+    key=lambda x: x.get('date',''), reverse=True
+)
+latest = runs[0]  # most recent run
+```
+
+**Elevation-adjusted HR (flat-equivalent):**
+Rule of thumb: uphill inflates HR ~1 bpm per 10m gain; downhill saves ~0.5 bpm per 10m loss.
+```python
+def flat_equivalent_hr(split):
+    hr = split['averageHR']
+    return hr - (split['elevationGain'] / 10.0) + (split['elevationLoss'] / 10.0 * 0.5)
+```
+
+**Weekly volume (last N weeks):**
+```python
+from datetime import datetime, timedelta
+cutoff = (datetime.now() - timedelta(weeks=N)).strftime('%Y-%m-%d')
+recent = [r for r in runs if r['date'] >= cutoff]
+total_km = sum(r['distance_km'] for r in recent)
+```
+
+### PowerShell/Python tips
+- For complex analysis with f-strings, write a `.py` file to session workspace and run it — PowerShell escaping breaks f-strings with dict keys.
+- Always use forward slashes in `open()` paths even on Windows.
+- The cache has ~558 total activities (535 runs + non-run activities).
+
 ## Key Principles
 1. **Consistency > Volume** - Better to do 15-20km/week floor than skip entirely
 2. **Progressive overload** - Build base → intensity → race-specific
 3. **Integrated strength** - 2x/week, periodized with running phases
 4. **Smart recovery** - Deload weeks built in (weeks 4, 8, 13, 15)
 5. **Execution practice** - 10K race as dress rehearsal for HM pacing
+6. **Cadence > Stride** - Increase turnover, let stride shorten naturally
+7. **Full foot contact** - Focus on whole-foot landing, not heel strike
+
+## Biomechanics Baseline (Feb 2026)
+
+### Current Mechanics Profile
+- **Cadence:** 162-165 spm locked in across all shoes and paces. Ceiling ~168 spm in training, 171 in hard intervals.
+- **Speed gain mechanism:** Predominantly stride length (+20%) over cadence (+4%). Stride:cadence ratio 5-11:1 depending on shoe.
+- **Stride at easy pace:** 84-92cm. At tempo: 103-105cm. At race: up to 110cm.
+- **Warmup pattern:** Km 1 cadence starts at 152-157, takes 500-1000m to reach 162+. Consistent across all runs.
+
+### Cadence-Pace Relationship (from 15+ runs)
+| Pace Zone | Cadence |
+|-----------|---------|
+| 7:00-7:29/km | 154 spm |
+| 6:30-6:59/km | 161 spm |
+| 6:00-6:29/km | 165 spm |
+| 5:30-5:59/km | 167 spm |
+| 5:00-5:29/km | 171 spm |
+
+### Hill Behavior by Shoe (Established Feb 2026)
+| Shoe | Downhill stride vs Uphill stride | Pattern |
+|------|--------------------------------|---------|
+| Kinvara (race) | +17.8cm on steep hills | Bombs downhills with long strides |
+| Pegasus (train) | +1 to +4cm | Moderate/consistent |
+| Flat shoes | **-4.0cm** | Cautious downhill — shorter, protective |
+
+### Key Biomechanics Goals
+1. **Short-term (May 2026 HM):** Push cadence to 167-168 sustained at race pace. 167 spm × 103cm = 5:49/km. Need 167 × 105cm OR 170 × 103cm for 5:41/km (sub-2:00).
+2. **Medium-term (18 months):** Raise baseline cadence to 170+ at easy pace. Reduce stride:cadence ratio from 5-11:1 toward 3:1.
+3. **Long-term:** Full barefoot/flat shoe running with naturally high cadence and short stride.
+
+## Shoe Rotation & Barefoot Transition
+
+### Current Shoes
+- **Saucony Kinvara 15** (4mm drop) × 2 pairs — natural shoe, race shoe, best feel
+- **Nike Pegasus 39** (10mm drop) × 1 pair — training, unintentionally builds cadence
+- **Flat/zero-cushion shoes** — for Sunday easy runs (started Feb 22, 2026)
+
+### Weekly Shoe Rotation
+| Day | Shoe | Session |
+|-----|------|---------|
+| Tue | Pegasus or Kinvara | Easy 6-8km |
+| Thu | Kinvara | Quality/intervals |
+| Sat | Alternate Peg/Kinvara | Long run (Kinvara for race-sim weeks) |
+| **Sun** | **Flat shoes** | **Easy 3→6km (building)** |
+| Race day | **Kinvara** | Fastest by data |
+
+### Barefoot Transition Plan (18-month goal: ~Aug 2027)
+**Goal:** Transition fully to flat/barefoot running. No new shoe purchases — use remaining Kinvara (×2) and Pegasus (×1) until they're done.
+
+**Phase 1 (Feb-May 2026):** Sunday flat-shoe easy runs. 3km → 6km over 8 weeks. Monitor calf/Achilles adaptation.
+**Phase 2 (Jun-Dec 2026):** Add Tuesday easy in flat shoes. 2 of 4 runs in flat shoes.
+**Phase 3 (Jan-Aug 2027):** Long runs in flat shoes. Quality sessions last to transition.
+
+**Flat shoe run ramp:** Add 500m/week if no calf soreness. If sore Monday morning, repeat same distance next week.
+**Watch for:** Calf tightness beyond day 3, metatarsal soreness, Achilles morning tenderness.
+**DO NOT:** Race in flat shoes this season. Do long runs >10km in flat shoes until Phase 3.
+
+### Shoe Data Insights
+- Kinvara: locks cadence at 163-164 with SD 2.05 (most consistent rhythm), enables long stride
+- Pegasus: slightly higher cadence 163-166 with SD 2.96, naturally caps stride
+- Flat shoes: cadence 164-165 with SD 2.25, shortest stride, fastest proprioceptive warmup, reverses downhill bombing pattern
+
+## How to Evaluate Runs (Standard Analysis Framework)
+
+### For every run analysis, check these in order:
+
+**1. Basic Stats** — Load from `tracking/unified-cache.json`
+- Pace, HR, distance, elevation, cadence
+- Compare to plan target
+
+**2. Splits Analysis** — From `splits.lapDTOs[]`
+- Per-km pace, HR, cadence, stride, elevation
+- Identify negative/positive split pattern
+- Flag traffic stops (slowest pace >16:00/km = stop, not form issue)
+
+**3. Cadence Check (PRIMARY FOCUS)**
+- Km 1 cadence vs settled cadence (gap should be shrinking over time)
+- Time to lock in (target: <500m)
+- Any dips mid-run? Correlate with elevation
+- Compare to baseline table above — is cadence improving at each pace zone?
+
+**4. Stride Assessment**
+- At easy pace: should be 84-90cm (shorter = better for barefoot transition)
+- At tempo: 100-105cm is fine
+- Downhill vs uphill delta: trending toward 0 or negative = good
+
+**5. Hill Response**
+- Good pattern: maintain cadence, accept slower pace, shorten stride on climbs
+- Bad pattern: extend stride on downhills, cadence drops on climbs
+- Compute elevation-adjusted HR if significant climbing
+
+**6. Shoe-Specific Context**
+- Note which shoe was worn (ask if not stated)
+- Compare metrics to same-shoe baseline, not cross-shoe
+
+**7. FIT File Deep Dive (monthly or on request)**
+- Download: `python scripts/download-fit.py <activity_id>`
+- Parse with fitparse for per-second records
+- 250m segment analysis for within-km variance
+- Steep hill (>3% grade) cadence/stride behavior
+- Cadence distribution histogram
+
+### Key Reference Runs (FIT files downloaded)
+| Run | ID | Shoe | Significance |
+|-----|-----|------|-------------|
+| Dec 7, 2025 | 21189171305 | Kinvara | Best feel run — 5:58/km, 164spm, stride-dominant |
+| Jan 4, 2026 | 21435729986 | Kinvara | Chennai HM race — 6:11/km, PR 2:08:26 |
+| Feb 14, 2026 | 21861063425 | Pegasus | Long 17km — gradual negative split, best race-sim pacing |
+| Feb 21, 2026 | 21933316016 | Pegasus | Long 16km — surge negative split, HR spike at finish |
+| Feb 22, 2026 | 21948878721 | Flat | First flat-shoe run — 4.79km, cautious downhill pattern ✅ |
 
 ## Form Improvement Focus: Arm Swing (NEW - Jan 2026)
 
@@ -64,10 +234,13 @@ This is a long-term running training and performance tracking system for continu
 - Compare gait videos when captured
 
 ## Training Structure
-- **Running days:** Tue (easy 6-8km), Thu (quality), Sat (long run), Sun (easy 5-7km)
+- **Running days:** Tue (easy 6-8km), Thu (quality), Sat (long run), Sun (easy 3-6km in flat shoes)
 - **Strength days:** Mon (Session A - 35-45min), Wed (Session B - 35-45min)
 - **Post-run activation:** Tue/Sun (10min)
-- **Current phase:** Week 1-2 Recovery (20-30km, easy only)
+- **Pre-run warmup:** Dynamic mobility + 3-4 × 60-80m strides before EVERY run (especially to fix km 1 cadence lag)
+- **Cadence drills (1×/week, Tue easy):** Cadence ladder — 5× (2min forced 170+ spm / 2min natural)
+- **Barefoot grass strides:** Optional Sun pre-run — 4×80m on grass, no shoes, to teach 170+ cadence pattern
+- **Shoe rotation:** Pegasus/Kinvara weekdays, flat shoes Sunday (see Shoe Rotation section)
 
 ## Historical Pattern Warnings
 
@@ -97,10 +270,17 @@ Based on 4 years of data (2022-2025), April-May has a **28.3% floor violation ra
 - Update weekly log
 
 ### Workout Analysis
-- Review Strava screenshots from `media/workouts/`
+- **Primary method:** Read `tracking/unified-cache.json` directly for splits, HR, pace, elevation
+- **Always note which shoe** was worn — mechanics differ significantly by shoe type
+- Also review Strava screenshots from `media/workouts/` when available
 - Assess splits, pacing, effort distribution
-- Compare to previous similar workouts
-- Track pace progressions
+- **Cadence is the primary metric** — check km 1 warmup lag, mid-run consistency, compare to baseline table
+- Compute elevation-adjusted HR for hilly runs (see schema section above)
+- Check hill behavior: stride delta between uphill/downhill segments (should be trending toward 0)
+- Compare to previous similar workouts (query by name pattern or date range)
+- Track pace progressions across weeks
+- For "how was my last run" questions: load unified-cache, sort by date desc, analyze latest
+- **FIT file download** (monthly or on request): `python scripts/download-fit.py <activity_id>` — gives per-second records for deep cadence/stride/elevation analysis
 
 ### Gait Analysis
 - Analyze videos from `media/gait-analysis/`
@@ -134,6 +314,12 @@ running/
 ├── README.md                          # Running dashboard (current state)
 ├── WORKFLOW.md                        # How to use this system
 │
+├── scripts/
+│   ├── download-fit.py               # Download FIT file: python scripts/download-fit.py <activity_id>
+│   ├── incremental-sync.py           # Sync activities: python scripts/incremental-sync.py --days 7
+│   ├── parse-fit.py                  # Parse FIT file for detailed analysis
+│   └── ...                           # Other scripts (see scripts/README.md)
+│
 ├── seasons/
 │   ├── 2026-spring-hm-sub2/          # Current season
 │   │   ├── plan.md                   # 20-week training plan
@@ -143,6 +329,9 @@ running/
 │   └── 2025-fall-chennai-hm/         # Historical seasons
 │
 ├── tracking/
+│   ├── unified-cache.json            # SINGLE SOURCE OF TRUTH — all run data
+│   ├── fit_files/                    # Downloaded FIT files for deep analysis
+│   ├── ai-insights.json              # AI-computed metrics
 │   ├── monthly-summary.md
 │   ├── injury-log.md
 │   └── pr-history.md
