@@ -170,7 +170,7 @@ Sample dataset: 161 activities over 12 months. See [sample-data/README.md](sampl
 | Initial sync (90 days) | `python scripts/incremental-sync.py --days 90` |
 | Daily sync | `python scripts/daily-sync.py` |
 | View dashboard | `streamlit run dashboard/app.py` |
-| Create workout | `python scripts/create-garmin-workouts.py --week 3` |
+| Create workout | `python scripts/create-garmin-workouts.py --week 11` |
 | Weekly summary | `python scripts/weekly-summary.py` |
 | Verify data | `python scripts/verify-data-integrity.py` |
 | Parse FIT file | `python scripts/parse-fit.py path/to/file.fit` |

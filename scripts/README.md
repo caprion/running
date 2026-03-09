@@ -2,30 +2,33 @@
 
 ## Garmin Workout Creation
 
-### `create-garmin-workouts.py` - Create Structured Workouts
+### `create-garmin-workouts.py` - Auto-Generate Workouts from Plan
 
-Creates and schedules workouts in Garmin Connect.
+Parses `plan.md` and creates structured workouts in Garmin Connect.
 
 **Usage:**
 ```bash
 # Preview workouts (dry run)
-python scripts/create-garmin-workouts.py --week 3 --dry-run
+python scripts/create-garmin-workouts.py --week 11 --dry-run
 
 # Create and schedule workouts
-python scripts/create-garmin-workouts.py --week 3
+python scripts/create-garmin-workouts.py --week 11
+
+# Specific days only
+python scripts/create-garmin-workouts.py --week 11 --days thu,sat
+
+# List all weeks from the plan
+python scripts/create-garmin-workouts.py --list
 ```
 
-**What it does:**
-1. Authenticates with Garmin Connect
-2. Creates structured workouts with pace targets, HR zones
-3. Schedules workouts to correct dates
-4. Supports warmup/cooldown with lap button
-5. Easy runs with no targets
+**How it works:**
+1. Parses per-week detailed sections from `plan.md` (weeks 9-20) or summary table (weeks 1-8)
+2. Converts session descriptions to Garmin workout steps (tempo, intervals, structured long runs, etc.)
+3. Authenticates with Garmin Connect and creates/schedules workouts
 
-**Adding new weeks:**
-Edit `get_week_workouts()` function in the script. Copy Week 3 structure.
+**Modifying workouts:** Edit the per-week table in `plan.md`, then re-run. No script changes needed.
 
-See [GARMIN-WORKOUT-AUTOMATION.md](../GARMIN-WORKOUT-AUTOMATION.md) for details.
+See [GARMIN-WORKOUT-AUTOMATION.md](../GARMIN-WORKOUT-AUTOMATION.md) for supported workout formats.
 
 ---
 

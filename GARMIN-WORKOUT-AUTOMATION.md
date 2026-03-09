@@ -1,76 +1,54 @@
 # Garmin Workout Automation
 
-## ✅ WORKING: Automated Workout Creation
+## ✅ Auto-Generated from Training Plan
 
-**Simple, clean solution for creating Garmin workouts from your training plan.**
+Workouts are automatically parsed from `seasons/2026-spring-hm-sub2/plan.md` — no manual workout definitions needed.
 
 ### Quick Start
 
 ```bash
-# Preview workouts for a week (dry run)
-python scripts/create-garmin-workouts.py --week 3 --dry-run
+# Preview workouts for a week
+python scripts/create-garmin-workouts.py --week 10 --dry-run
 
-# Create and schedule workouts for a week
-python scripts/create-garmin-workouts.py --week 3
+# Create and schedule workouts in Garmin Connect
+python scripts/create-garmin-workouts.py --week 10
+
+# Create specific days only
+python scripts/create-garmin-workouts.py --week 10 --days thu,sat
+
+# List all weeks from the plan
+python scripts/create-garmin-workouts.py --list
 ```
 
-### What It Does
+### How It Works
 
-- ✓ Creates structured workouts in Garmin Connect
-- ✓ Schedules them to the correct dates
-- ✓ Supports tempo runs with pace targets
-- ✓ Uses lap button for flexible warmup/cooldown
-- ✓ Simple Python script - no complex dependencies
+The script reads your training plan and auto-generates structured Garmin workouts:
 
-### Week 3 Example (Created Jan 17, 2026)
+1. **Weeks 9-20** — Parsed from per-week detailed sections (`#### Week N` tables with exact per-day prescriptions)
+2. **Weeks 1-8** — Parsed from the summary table (`Weekly Volume Progression`) with percentage-based distance calculation
 
-| Date | Day | Workout |
-|------|-----|---------|
-| Jan 20 | Tue | Easy 7km |
-| Jan 22 | Thu | Tempo 4km @ 5:55/km |
-| Jan 24 | Sat | Long Run 14km |
-| Jan 25 | Sun | Easy 6km |
+No manual workout definitions. Update the plan, and the script picks up the changes.
 
-### Adding New Weeks
+### What It Supports
 
-Edit `scripts/create-garmin-workouts.py` and add workout definitions to the `get_week_workouts()` function.
+| Workout Type | Example | Garmin Steps |
+|-------------|---------|--------------|
+| Easy run | `Easy 8km` | 1 step — open distance |
+| Tempo | `Tempo 6km@5:40-5:45` | 3 steps — warmup (lap) → tempo with pace → cooldown (lap) |
+| Intervals | `3×2km@5:35` or `4×1.5km@5:35` | 3 steps — warmup (lap) → repeat group → cooldown (lap) |
+| Sharpener | `Sharpener 4×600m@5:15` | Same as intervals |
+| Structured long run | `Long 21km: 6E + 10@5:45 + 5E` | Multi-step — easy/tempo/easy segments with distances |
+| Long w/ tempo | `Long 16km w/ 6km@5:50` | 3 steps — warmup (lap) → tempo → cooldown (lap) |
+| Fast finish | `Long 18km fast-finish` | 2 steps — easy + tempo (parsed from details column) |
+| Easy w/ tempo | `Easy 8km w/ 2km@5:45` | 3 steps — warmup (lap) → tempo → cooldown (lap) |
+| Strides | `Easy 4km + strides` | Repeat group — 4×20s fast / 60s recovery |
+| Flat-shoe easy | `Flat-shoe easy 5km` | 1 step — open distance |
 
-See Week 3 as a template - copy the structure and adjust distances/paces.
+### Warmup / Cooldown Convention
 
-**Documentation:**
-- [Full Guide](docs/garmin-workout-creation-guide.md) - API format and examples
-- [Quick Reference](docs/garmin-api-quick-reference.md) - IDs and common patterns
-
----
-
-## Technical Details
-
-### Garmin API Format
-
-**Required structure for each workout step:**
-```json
-{
-  "type": "ExecutableStepDTO",  // REQUIRED
-  "stepOrder": 1,
-  "stepType": {"stepTypeId": 3},
-  "endCondition": {"conditionTypeId": 3},
-  "endConditionValue": 5000.0,
-  "targetType": {"workoutTargetTypeId": 1}
-}
-```
-
-**Key IDs:**
-- Step Types: 1=warmup, 2=cooldown, 3=interval
-- End Conditions: 1=lap button, 2=time, 3=distance
-- Target Types: 1=open, 4=HR zone, 6=pace
-
-**Pace conversion:** min/km to m/s
-```python
-# 6:00/km = 1000m / 360s = 2.778 m/s
-# 5:55/km = 1000m / 355s = 2.817 m/s
-```
-
-See [Quick Reference](docs/garmin-api-quick-reference.md) for complete API documentation.
+- **Tempo, intervals, long-tempo** — Warmup and cooldown use **lap button** (press lap when ready). They are part of the overall run.
+- **Structured long runs** — Segments use **distance-based** transitions (auto-advance at each km target).
+- **Recovery time** — Parsed from the details column (e.g., "2min jog recovery" → 120s, "90s jog recovery" → 90s).
 
 ---
 
@@ -82,7 +60,7 @@ pip install garminconnect python-dotenv
 
 ### Environment Setup
 
-Create `.env` file:
+Create `.env` file in project root:
 ```
 GARMIN_EMAIL=your@email.com
 GARMIN_PASSWORD=yourpassword
@@ -90,77 +68,29 @@ GARMIN_PASSWORD=yourpassword
 
 ---
 
-## Archived/Unused Components
+## Modifying Workouts
 
-The following were explored but not used in the final solution:
-- Excel parser (we define workouts directly in Python)
-- JSON builder module (inline creation is simpler)
-- Separate client wrapper (using garminconnect library directly)
+**To change a workout:** Edit the per-week table in `plan.md`, then re-run the script. The session column is parsed directly.
 
-These have been removed to keep the codebase clean and maintainable.
+**Supported session formats in plan.md:**
+```
+| Tue | Easy 8km             | 6:45-7:15/km                          |
+| Thu | **Tempo 6km@5:40**   | Total ~9km with warmup/cooldown       |
+| Sat | **Long 21km: 6E + 10@5:45 + 5E** | Race simulation at HM distance |
+| Sun | Flat-shoe easy 3-4km | Short recovery                        |
+```
+
+**Key formatting rules:**
+- Distances: `Nkm` (supports decimals like `1.5km`)
+- Paces: `N:NN` or `N:NN-N:NN` for ranges
+- Intervals: `N×Nkm@N:NN` (Unicode × or x both work)
+- Structured segments: `NE` for easy, `N@N:NN` for paced, joined with ` + `
+- Recovery info goes in the Details column (e.g., "2min jog recovery")
 
 ---
 
-## Usage Examples
+## Archived Documentation
 
-### Create Week 3 Workouts
-```bash
-python scripts/create-garmin-workouts.py --week 3
-```
-
-### Preview Week 4 (Dry Run)
-```bash
-python scripts/create-garmin-workouts.py --week 4 --dry-run
-```
-
-### Adding a New Week
-
-1. Open `scripts/create-garmin-workouts.py`
-2. Find the `get_week_workouts()` function
-3. Add a new `elif` block for your week number
-4. Copy the Week 3 structure and modify dates/distances/paces
-
-Example:
-```python
-elif week_number == 4:
-    return [
-        {
-            "date": "2026-01-27",
-            "name": "Week 4: Easy 6km",
-            "description": "Easy run - Zone 2",
-            "steps": [
-                {
-                    "type": "ExecutableStepDTO",
-                    "stepOrder": 1,
-                    "stepType": {"stepTypeId": 3},
-                    "endCondition": {"conditionTypeId": 3},
-                    "endConditionValue": 6000.0,
-                    "targetType": {"workoutTargetTypeId": 1}
-                }
-            ]
-        },
-        # ... more workouts
-    ]
-```
-
----
-
-## Summary
-
-**Status:** ✅ Working solution for automated Garmin workout creation
-
-**What it does:**
-- Creates structured workouts in Garmin Connect
-- Schedules to correct dates
-- Supports pace targets, lap button, HR zones
-- Simple Python script, no complex dependencies
-
-**Going forward:**
-- Use `python scripts/create-garmin-workouts.py --week N` to create each week
-- Add workout definitions as needed in the script
-- Sync Garmin watch to receive workouts
-
-**Documentation:**
-- [Garmin Workout Creation Guide](docs/garmin-workout-creation-guide.md)
-- [API Quick Reference](docs/garmin-api-quick-reference.md)
-
+Low-level API docs (for reference only):
+- [Garmin Workout Creation Guide](docs/archived/garmin-workout-creation-guide.md)
+- [API Quick Reference](docs/archived/garmin-api-quick-reference.md)
